@@ -94,13 +94,12 @@ Resources:
             Queue: !GetAtt SQSTaskQueue.Arn
             BatchSize: 5
 
-
   # Lambda Function for SQS Notification Processing
-  SNSSubscriptionLambda:
+  SubscribeToSnsLambda:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-SNSSubscriptionLambda
-      Handler: org.example.SNSSubscriptionLambda::handleRequest
+      FunctionName: !Sub ${AWS::StackName}-SubscribeToSNS
+      Handler: org.example.SubscribeToSNS::handleRequest
       Runtime: java21
       CodeUri: .
       MemorySize: 512
@@ -116,12 +115,28 @@ Resources:
               - !Ref TasksDeadlineNotificationTopic
               - !Ref ClosedTasksNotificationTopic
               - !Ref ReopenedTasksNotificationTopic
+
+  # Lambda Function for PostConfirmationTrigger
+  PostConfirmationTriggerLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-PostConfirmationTrigger
+      Handler: org.example.PostConfirmationTrigger::handleRequest
+      Runtime: java21
+      CodeUri: .
+      MemorySize: 512
+      Timeout: 30
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            Effect: Allow
+            Action:
+              - states:StartExecution
+            Resource:
+              - !GetAtt UserSubscriptionStateMachine.Arn
       Environment:
         Variables:
-          TASKS_ASSIGNMENT_TOPIC_ARN: !Ref TasksAssignmentNotificationTopic
-          TASKS_DEADLINE_TOPIC_ARN: !Ref TasksDeadlineNotificationTopic
-          CLOSED_TASKS_TOPIC_ARN: !Ref ClosedTasksNotificationTopic
-          REOPENED_TASKS_TOPIC_ARN: !Ref ReopenedTasksNotificationTopic
+          STATE_MACHINE_ARN: !Ref UserSubscriptionStateMachine
       Events:
         CognitoPostConfirmationEvent:
           Type: Cognito
@@ -250,6 +265,115 @@ Resources:
           Projection:
             ProjectionType: ALL
       BillingMode: PAY_PER_REQUEST
+
+  # Step Functions Role
+  StepFunctionsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: states.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: SNSSubscribePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sns:Subscribe
+                Resource:
+                  - !Ref TasksAssignmentNotificationTopic
+                  - !Ref TasksDeadlineNotificationTopic
+                  - !Ref ClosedTasksNotificationTopic
+                  - !Ref ReopenedTasksNotificationTopic
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource: !GetAtt SubscribeToSnsLambda.Arn
+
+  # Step Functions State Machine
+  UserSubscriptionStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: !Sub ${AWS::StackName}-UserSubscriptionStateMachine
+      RoleArn: !GetAtt StepFunctionsRole.Arn
+      DefinitionString: !Sub |
+        {
+          "StartAt": "LogInput",
+          "States": {
+            "LogInput": {
+              "Type": "Pass",
+              "ResultPath": "$.input",
+              "Next": "SubscribeToSNS"
+            },
+            "SubscribeToSNS": {
+              "Type": "Parallel",
+              "Branches": [
+                {
+                  "StartAt": "SubscribeToTasksAssignmentTopic",
+                  "States": {
+                    "SubscribeToTasksAssignmentTopic": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${SubscribeToSnsLambda}",
+                      "Parameters": {
+                        "TopicArn": "${TasksAssignmentNotificationTopic}",
+                        "Email.$": "$.userEmail"
+                      },
+                      "End": true
+                    }
+                  }
+                },
+                {
+                  "StartAt": "SubscribeToTasksDeadlineTopic",
+                  "States": {
+                    "SubscribeToTasksDeadlineTopic": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${SubscribeToSnsLambda}",
+                      "Parameters": {
+                        "TopicArn": "${TasksDeadlineNotificationTopic}",
+                        "Email.$": "$.userEmail"
+                      },
+                      "End": true
+                    }
+                  }
+                },
+                {
+                  "StartAt": "SubscribeToClosedTasksTopic",
+                  "States": {
+                    "SubscribeToClosedTasksTopic": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${SubscribeToSnsLambda}",
+                      "Parameters": {
+                        "TopicArn": "${ClosedTasksNotificationTopic}",
+                        "Email.$": "$.userEmail"
+                      },
+                      "End": true
+                    }
+                  }
+                },
+                {
+                  "StartAt": "SubscribeToReopenedTasksTopic",
+                  "States": {
+                    "SubscribeToReopenedTasksTopic": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${SubscribeToSnsLambda}",
+                      "Parameters": {
+                        "TopicArn": "${ReopenedTasksNotificationTopic}",
+                        "Email.$": "$.userEmail"
+                      },
+                      "End": true
+                    }
+                  }
+                }
+              ],
+              "End": true
+            }
+          }
+        }
 
 
 Outputs:
