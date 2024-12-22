@@ -29,8 +29,10 @@ public class SqsServiceImpl implements SqsService {
 
         Map<String, MessageAttributeValue> attributes = new HashMap<>();
         attributes.put("assignedTo", MessageAttributeValue.builder().dataType("String").stringValue(task.getAssignedTo()).build());
+        attributes.put("createdBy", MessageAttributeValue.builder().dataType("String").stringValue(task.getCreatedBy()).build());
         attributes.put("taskId", MessageAttributeValue.builder().dataType("String").stringValue(task.getTaskId()).build());
         attributes.put("snsTopicArn", MessageAttributeValue.builder().dataType("String").stringValue(tasksAssignmentTopicArn).build());
+        attributes.put("workflowType", MessageAttributeValue.builder().dataType("String").stringValue("publishToSNS").build());
 
         SendMessageRequest sendMessageRequest = SendMessageRequest.builder()
                 .queueUrl(taskQueueUrl)

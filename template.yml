@@ -51,7 +51,7 @@ Resources:
           FRONTEND_DEV_URL: !Ref FrontendDevHost
           FRONTEND_PROD_URL: !Ref FrontendProdHost
           TASKS_TABLE_NAME: !Ref TasksTable
-          TASKS_QUEUE_URL: "SQSTaskQueue"
+          TASKS_QUEUE_URL: !Ref SQSTaskQueue
       Events:
         ProxyResource:
           Type: Api
@@ -59,12 +59,12 @@ Resources:
             Path: /{proxy+}
             Method: any
 
-  # Lambda Function for SQS Notification Processing
-  SNSNotificationLambda:
+  # Lambda Function for SQS Notification Processing and state machine execution
+  SQSEventLambda :
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-SNSNotificationLambda
-      Handler: org.example.SNSNotificationLambda::handleRequest
+      FunctionName: !Sub ${AWS::StackName}-SQSEventLambda
+      Handler: org.example.SQSEventLambda::handleRequest
       Runtime: java21
       CodeUri: .
       MemorySize: 512
@@ -82,11 +82,23 @@ Resources:
             Effect: Allow
             Action:
               - sns:Publish
+              - sns:ListSubscriptionsByTopic
+              - sns:GetSubscriptionAttributes
+              - sns:SetSubscriptionAttributes
             Resource:
               - !Ref TasksAssignmentNotificationTopic
               - !Ref TasksDeadlineNotificationTopic
               - !Ref ClosedTasksNotificationTopic
               - !Ref ReopenedTasksNotificationTopic
+        - Statement:
+            Effect: Allow
+            Action:
+              - states:StartExecution
+            Resource:
+              - !GetAtt StepFunctionStateMachine.Arn
+      Environment:
+        Variables:
+          STATE_MACHINE_ARN: !Ref StepFunctionStateMachine
       Events:
         SQSTrigger:
           Type: SQS
@@ -98,8 +110,8 @@ Resources:
   SubscribeToSnsLambda:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-SubscribeToSNS
-      Handler: org.example.SubscribeToSNS::handleRequest
+      FunctionName: !Sub ${AWS::StackName}-SubscribeToSNSLambda
+      Handler: org.example.SubscribeToSNSLambda::handleRequest
       Runtime: java21
       CodeUri: .
       MemorySize: 512
@@ -116,12 +128,12 @@ Resources:
               - !Ref ClosedTasksNotificationTopic
               - !Ref ReopenedTasksNotificationTopic
 
-  # Lambda Function for PostConfirmationTrigger
-  PostConfirmationTriggerLambda:
+  # Lambda Function for CognitoPostConfirmationLambda to use state machine
+  CognitoPostConfirmationLambda:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-PostConfirmationTrigger
-      Handler: org.example.PostConfirmationTrigger::handleRequest
+      FunctionName: !Sub ${AWS::StackName}-CognitoPostConfirmationLambda
+      Handler: org.example.CognitoPostConfirmationLambda::handleRequest
       Runtime: java21
       CodeUri: .
       MemorySize: 512
@@ -133,16 +145,86 @@ Resources:
             Action:
               - states:StartExecution
             Resource:
-              - !GetAtt UserSubscriptionStateMachine.Arn
+              - !GetAtt StepFunctionStateMachine.Arn
       Environment:
         Variables:
-          STATE_MACHINE_ARN: !Ref UserSubscriptionStateMachine
+          STATE_MACHINE_ARN: !Ref StepFunctionStateMachine
       Events:
         CognitoPostConfirmationEvent:
           Type: Cognito
           Properties:
             UserPool: !Ref UserPool
             Trigger: PostConfirmation
+
+  # Lambda Function for SQS Notification Processing
+  UpdateTaskStatusLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-UpdateTaskStatusLambda
+      Handler: org.example.UpdateTaskStatusLambda::handleRequest
+      Runtime: java21
+      CodeUri: .
+      MemorySize: 512
+      Timeout: 30
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            Effect: Allow
+            Action:
+              - "dynamodb:UpdateItem"
+            Resource: !GetAtt TasksTable.Arn
+
+  # Lambda Function for Deadline SNS Notification Processing
+  SendDeadlineNotificationLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-SendDeadlineNotificationLambda
+      Handler: org.example.SendDeadlineNotificationLambda::handleRequest
+      Runtime: java21
+      CodeUri: .
+      MemorySize: 512
+      Timeout: 30
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            Effect: Allow
+            Action:
+              - sns:Publish
+              - sns:ListSubscriptionsByTopic
+              - sns:GetSubscriptionAttributes
+              - sns:SetSubscriptionAttributes
+            Resource:
+              - !Ref TasksAssignmentNotificationTopic
+              - !Ref TasksDeadlineNotificationTopic
+              - !Ref ClosedTasksNotificationTopic
+              - !Ref ReopenedTasksNotificationTopic
+
+  # Lambda function to schedule events
+  EventBridgeSchedulerLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-EventBridgeSchedulerLambda
+      Handler: org.example.EventBridgeSchedulerLambda::handleRequest
+      Runtime: java21
+      CodeUri: .
+      MemorySize: 512
+      Timeout: 30
+      Environment:
+        Variables:
+          TASKS_TABLE_NAME: !Ref TasksTable
+          TASKS_QUEUE_URL: !Ref SQSTaskQueue
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref TasksTable
+        - SQSSendMessagePolicy:
+            QueueName: !Ref SQSTaskQueue
+      Events:
+        TaskDeadlineEvent:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 day)
+            Input: "{}"
+
 
   # Cognito User Pool
   UserPool:
@@ -282,33 +364,47 @@ Resources:
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
-              - Effect: Allow
-                Action:
-                  - sns:Subscribe
-                Resource:
-                  - !Ref TasksAssignmentNotificationTopic
-                  - !Ref TasksDeadlineNotificationTopic
-                  - !Ref ClosedTasksNotificationTopic
-                  - !Ref ReopenedTasksNotificationTopic
+#              - Effect: Allow
+#                Action:
+#                  - sns:Subscribe
+#                Resource:
+#                  - !Ref TasksAssignmentNotificationTopic
+#                  - !Ref TasksDeadlineNotificationTopic
+#                  - !Ref ClosedTasksNotificationTopic
+#                  - !Ref ReopenedTasksNotificationTopic
               - Effect: Allow
                 Action:
                   - lambda:InvokeFunction
-                Resource: !GetAtt SubscribeToSnsLambda.Arn
+                Resource:
+                  - !GetAtt SubscribeToSnsLambda.Arn
+                  - !GetAtt UpdateTaskStatusLambda.Arn
+                  - !GetAtt SendDeadlineNotificationLambda.Arn
 
   # Step Functions State Machine
-  UserSubscriptionStateMachine:
+  StepFunctionStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
-      StateMachineName: !Sub ${AWS::StackName}-UserSubscriptionStateMachine
+      StateMachineName: !Sub ${AWS::StackName}-StepFunctionStateMachine
       RoleArn: !GetAtt StepFunctionsRole.Arn
       DefinitionString: !Sub |
         {
-          "StartAt": "LogInput",
+          "StartAt": "DetermineWorkflow",
           "States": {
-            "LogInput": {
-              "Type": "Pass",
-              "ResultPath": "$.input",
-              "Next": "SubscribeToSNS"
+            "DetermineWorkflow": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.workflowType",
+                  "StringEquals": "onboarding",
+                  "Next": "SubscribeToSNS"
+                },
+                {
+                  "Variable": "$.workflowType",
+                  "StringEquals": "taskDeadline",
+                  "Next": "HandleTaskDeadline"
+                }
+              ],
+              "Default": "FailState"
             },
             "SubscribeToSNS": {
               "Type": "Parallel",
@@ -370,7 +466,51 @@ Resources:
                   }
                 }
               ],
-              "End": true
+              "Next": "SuccessState"
+            },
+            "HandleTaskDeadline": {
+              "Type": "Parallel",
+              "Branches": [
+                {
+                  "StartAt": "UpdateTaskStatus",
+                  "States": {
+                    "UpdateTaskStatus": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${UpdateTaskStatusLambda}",
+                      "Parameters": {
+                        "TaskId.$": "$.taskId",
+                        "Status": "Expired"
+                      },
+                      "End": true
+                    }
+                  }
+                },
+                {
+                  "StartAt": "SendDeadlineNotification",
+                  "States": {
+                    "SendDeadlineNotification": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${SendDeadlineNotificationLambda}",
+                      "Parameters": {
+                        "TopicArn": "${ClosedTasksNotificationTopic}",
+                        "TaskId.$": "$.taskId",
+                        "UserEmail.$": "$.assignedTo",
+                        "AdminEmail.$": "$.createdBy"
+                      },
+                      "End": true
+                    }
+                  }
+                }
+              ],
+              "Next": "SuccessState"
+            },
+            "SuccessState": {
+              "Type": "Succeed"
+            },
+            "FailState": {
+              "Type": "Fail",
+              "Error": "InvalidWorkflowType",
+              "Cause": "The workflow type provided is not supported."
             }
           }
         }

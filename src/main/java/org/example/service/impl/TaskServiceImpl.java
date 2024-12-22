@@ -31,7 +31,7 @@ public class TaskServiceImpl implements TaskService {
         item.put("description", AttributeValue.builder().s(task.getDescription()).build());
         item.put("status", AttributeValue.builder().s(String.valueOf(task.getStatus())).build());
         item.put("createdBy", AttributeValue.builder().s(task.getCreatedBy()).build());
-        item.put("creationDate", AttributeValue.builder().s(String.valueOf(task.getCreationDate())).build());
+        item.put("creationDate", AttributeValue.builder().s(String.valueOf(task.getDeadline())).build());
         item.put("deadline", AttributeValue.builder().s(String.valueOf(task.getDeadline())).build());
         item.put("priority", AttributeValue.builder().s(task.getPriority()).build());
 

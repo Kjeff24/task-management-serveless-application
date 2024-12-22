@@ -7,12 +7,12 @@ import software.amazon.awssdk.services.sfn.SfnClient;
 import software.amazon.awssdk.services.sfn.model.StartExecutionRequest;
 
 
-public class PostConfirmationTrigger implements RequestHandler<CognitoUserPoolPostConfirmationEvent, CognitoUserPoolPostConfirmationEvent> {
+public class CognitoPostConfirmationLambda implements RequestHandler<CognitoUserPoolPostConfirmationEvent, CognitoUserPoolPostConfirmationEvent> {
 
     private final SfnClient stepFunctionsClient;
     private final String stateMachineArn;
 
-    public PostConfirmationTrigger() {
+    public CognitoPostConfirmationLambda() {
         stepFunctionsClient = SfnClient.create();
         stateMachineArn = System.getenv("STATE_MACHINE_ARN");
     }
@@ -20,10 +20,11 @@ public class PostConfirmationTrigger implements RequestHandler<CognitoUserPoolPo
     @Override
     public CognitoUserPoolPostConfirmationEvent handleRequest(CognitoUserPoolPostConfirmationEvent event, Context context) {
         String userEmail = event.getRequest().getUserAttributes().get("email");
+        String input = String.format("{\"workflowType\":\"onboarding\",\"userEmail\":\"%s\"}", userEmail);
 
         StartExecutionRequest executionRequest = StartExecutionRequest.builder()
                 .stateMachineArn(stateMachineArn)
-                .input("{\"userEmail\": \"" + userEmail + "\"}")
+                .input(input)
                 .build();
 
         stepFunctionsClient.startExecution(executionRequest);
