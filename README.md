@@ -1,16 +1,29 @@
 # spring-boot-serveless serverless API
-A simple REST API for managing products (create, read, update, and delete operations). This project is deployed on AWS Lambda and connected to AWS API Gateway to handle request. 
-Application was deployed to AWS using the AWS SAM CLI.
 
-## Features
-- Create Product: Allows users to add a new product.
-- Read Product: Allows users to fetch details of a specific product or all products.
-- Update Product: Allows users to modify an existing product.
-- Delete Product: Allows users to delete a product from the database.
+### Get Meta-data on your cognito user pool
+```
+aws cognito-idp describe-user-pool-client --user-pool-id <your-user-pool-id> --client-id <your-client-id>
+```
 
-## Technologies Used
-- Spring Boot: Backend framework to build the REST API.
-- AWS Lambda: Serverless compute service to run the application.
-- AWS API Gateway: Manages the REST API endpoints.
-- AWS SAM (Serverless Application Model): Tool to deploy and manage serverless applications on AWS.
+### Authentication your for ID_TOKEN
+```
+aws cognito-idp initiate-auth --auth-flow USER_PASSWORD_AUTH --client-id <your-client-id> --auth-parameters USERNAME=<your-username>,PASSWORD=<your-password> --query 'AuthenticationResult.IdToken' --output text
+```
+
+### Get your basic credentials
+```
+echo -n "<your-client-id>:<your-client-secret>" | base64
+```
+
+```
+curl --location --request POST 'https://<your-user-pool-domain>.auth.<your-aws-region>.amazoncognito.com/oauth2/token' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--header 'Authorization: Basic <your-basic-credentials>' \
+--data-urlencode 'grant_type=authorization_code' \
+--data-urlencode 'client_id=<your-client-id>' \
+--data-urlencode 'code=<your-code>' \
+--data-urlencode 'redirect_uri=http://localhost:4200' | jq .
+
+```
+
 

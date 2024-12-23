@@ -68,10 +68,11 @@
             <artifactId>sns</artifactId>
             <version>2.29.37</version>
         </dependency>
+
         <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>dynamodb</artifactId>
-            <version>2.29.37</version>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-dynamodb</artifactId>
+            <version>1.12.780</version>
         </dependency>
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
@@ -88,7 +89,6 @@
             <artifactId>aws-lambda-java-events</artifactId>
             <version>3.14.0</version>
         </dependency>
-
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
