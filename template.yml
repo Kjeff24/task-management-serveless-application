@@ -14,6 +14,12 @@ Parameters:
     Type: String
     Default: "http://localhost:4200"
     Description: The localhost of my frontend
+  AwsAccessKeyId:
+    Type: String
+    Description: The localhost of my frontend
+  AwsSecretKey:
+    Type: String
+    Description: The localhost of my frontend
 
 Resources:
   # Lambda Function for API Gateway
@@ -47,10 +53,16 @@ Resources:
       Timeout: 30
       Environment:
         Variables:
-          COGNITO_USER_POOL_ID: !Ref UserPool
+          TASKS_TABLE_NAME: !Ref TasksTable
           FRONTEND_DEV_URL: !Ref FrontendDevHost
           FRONTEND_PROD_URL: !Ref FrontendProdHost
-          TASKS_TABLE_NAME: !Ref TasksTable
+          ACCESS_KEY: !Ref AwsAccessKeyId
+          SECRET_kEY: !Ref AwsSecretKey
+          TASKS_ASSIGNMENT_TOPIC_ARN: !Ref TasksAssignmentNotificationTopic
+          TASKS_DEADLINE_TOPIC_ARN: !Ref TasksDeadlineNotificationTopic
+          CLOSED_TASKS_TOPIC_ARN: !Ref ClosedTasksNotificationTopic
+          REOPENED_TASKS_TOPIC_ARN: !Ref ReopenedTasksNotificationTopic
+          COGNITO_USER_POOL_ID: !Ref UserPool
           TASKS_QUEUE_URL: !Ref SQSTaskQueue
       Events:
         ProxyResource:
@@ -262,7 +274,7 @@ Resources:
     Type: AWS::Cognito::UserPoolClient
     Properties:
       ClientName: !Sub ${AWS::StackName}UserPoolClient
-      GenerateSecret: false
+      GenerateSecret: true
       AllowedOAuthFlowsUserPoolClient: true
       AllowedOAuthFlows:
         - code
@@ -280,8 +292,15 @@ Resources:
       CallbackURLs:
         - !Ref FrontendDevHost
         - !Ref FrontendProdHost
-      RefreshTokenValidity: 30
       UserPoolId: !Ref UserPool
+      RefreshTokenValidity: 30
+      AccessTokenValidity: 6
+      IdTokenValidity: 6
+      TokenValidityUnits:
+        AccessToken: hours
+        IdToken: hours
+        RefreshToken: days
+
 
   # Cognito User Pool Domain
   UserPoolDomain:
@@ -334,7 +353,19 @@ Resources:
       AttributeDefinitions:
         - AttributeName: taskId
           AttributeType: S
+#        - AttributeName: title
+#          AttributeType: S
+#        - AttributeName: description
+#          AttributeType: S
         - AttributeName: assignedTo
+          AttributeType: S
+        - AttributeName: status
+          AttributeType: S
+        - AttributeName: hasSentDeadlineNotification
+          AttributeType: S
+        - AttributeName: deadline
+          AttributeType: S
+        - AttributeName: createdBy
           AttributeType: S
       KeySchema:
         - AttributeName: taskId
@@ -343,6 +374,30 @@ Resources:
         - IndexName: AssignedToIndex
           KeySchema:
             - AttributeName: assignedTo
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: StatusIndex
+          KeySchema:
+              - AttributeName: status
+                KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: HasSentDeadlineNotificationIndex
+          KeySchema:
+            - AttributeName: hasSentDeadlineNotification
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: DeadlineIndex
+          KeySchema:
+            - AttributeName: deadline
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: CreatedByIndex
+          KeySchema:
+            - AttributeName: createdBy
               KeyType: HASH
           Projection:
             ProjectionType: ALL
@@ -538,6 +593,14 @@ Outputs:
   CognitoLoginURL:
     Description: Cognito User Pool Application Client Hosted Login UI URL
     Value: !Sub 'https://${UserPoolDomain}.auth.${AWS::Region}.amazoncognito.com/login?client_id=${UserPoolClient}&response_type=code&redirect_uri=${FrontendProdHost}'
+
+  CognitoAuthCommand:
+    Description: AWS CLI command for Amazon Cognito User Pool authentication
+    Value: !Sub "aws cognito-idp initiate-auth --auth-flow USER_PASSWORD_AUTH --client-id ${UserPoolClient} --auth-parameters USERNAME=<user@example.com>,PASSWORD=<password> --query 'AuthenticationResult.IdToken' --output text"
+
+  CognitoUserPoolClientInfo:
+    Description: AWS CLI command for Amazon Cognito User Pool information
+    Value: !Sub "aws cognito-idp describe-user-pool-client --user-pool-id ${UserPool} --client-id ${UserPoolClient}"
 
   TasksTable:
     Description: Dynamodb task table

@@ -28,6 +28,7 @@ public class SecurityConfig {
                 .cors(c -> c.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests((authorize) -> authorize
+                        .requestMatchers("/ping").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer((oauth2) -> oauth2.jwt(Customizer.withDefaults()));
