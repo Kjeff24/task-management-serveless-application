@@ -1,6 +1,7 @@
 package org.example.repository;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import lombok.RequiredArgsConstructor;
 import org.example.model.Task;
 import org.springframework.stereotype.Repository;
 
@@ -8,8 +9,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Repository
+@RequiredArgsConstructor
 public class TaskRepository {
-    private DynamoDBMapper dynamoDBMapper;
+    private final DynamoDBMapper dynamoDBMapper;
 
     public void saveTask(Task task) {
         dynamoDBMapper.save(task);
@@ -26,8 +28,6 @@ public class TaskRepository {
     }
 
     public void deleteTask(String taskId) {
-        Task task = new Task();
-        task.setTaskId(taskId);
-        dynamoDBMapper.delete(task);
+        dynamoDBMapper.delete(getTaskById(taskId));
     }
 }

@@ -1,7 +1,7 @@
 package org.example.service;
 
-import org.example.model.Task;
+import org.example.dto.TaskRequest;
 
 public interface TaskService {
-    void createTask(Task task);
+    void createTask(TaskRequest task, String adminId);
 }
