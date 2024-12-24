@@ -3,7 +3,7 @@ package org.example.dto;
 import java.time.LocalDateTime;
 
 public record TaskRequest(
-        String title,
+        String name,
         String description,
         String assignedTo,
         LocalDateTime deadline,

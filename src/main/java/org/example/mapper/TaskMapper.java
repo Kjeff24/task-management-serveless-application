@@ -10,12 +10,11 @@ public class TaskMapper {
     public Task toTask(TaskRequest taskRequest, String adminId) {
         return Task.builder()
 //                .taskId(UUID.randomUUID().toString())
-                .title(taskRequest.title())
+                .name(taskRequest.name())
                 .description(taskRequest.description())
                 .assignedTo(taskRequest.assignedTo())
                 .status(taskRequest.status())
                 .deadline(taskRequest.deadline())
-                .createdBy(adminId)
                 .hasSentDeadlineNotification(0)
                 .build();
     }
