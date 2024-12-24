@@ -1,48 +1,64 @@
 package org.example.repository.impl;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
 import lombok.RequiredArgsConstructor;
 import org.example.model.Task;
 import org.example.repository.TaskRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
+import software.amazon.awssdk.enhanced.dynamodb.*;
+import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
+import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
 public class TaskRepositoryImpl implements TaskRepository {
-    private final DynamoDBMapper dynamoDBMapper;
+
+    private final DynamoDbEnhancedClient dynamoDbEnhancedClient;
+
+    public static final TableSchema<Task> TASK_TABLE_SCHEMA = TableSchema
+            .fromBean(Task.class);
+
+    @Value("${app.aws.dynamodb.task.table}")
+    private String taskTableName;
+
+    private DynamoDbTable<Task> getTable() {
+        return dynamoDbEnhancedClient.table(taskTableName, TASK_TABLE_SCHEMA);
+    }
+
 
     public void saveTask(Task task) {
-        dynamoDBMapper.save(task);
-
+        getTable().putItem(task);
     }
+
 
     public Task getTaskById(String taskId) {
-        return dynamoDBMapper.load(Task.class, taskId);
+        Key key = Key.builder().partitionValue(taskId).build();
+        return getTable().getItem(r -> r.key(key));
     }
+
 
     public List<Task> getTasksByAssignedTo(String assignedTo) {
-        Task task = new Task();
-        task.setAssignedTo(assignedTo);
-
-        DynamoDBQueryExpression<Task> queryExpression = new DynamoDBQueryExpression<Task>()
-                .withHashKeyValues(task)
-                .withConsistentRead(false);
-        return dynamoDBMapper.query(Task.class, queryExpression);
+        return getTable().query(r -> r.queryConditional(
+                QueryConditional.keyEqualTo(k -> k.partitionValue(assignedTo)))).items().stream().collect(Collectors.toList());
     }
+
 
     public List<Task> getAllTasks() {
-        DynamoDBScanExpression scanExpression = new DynamoDBScanExpression();
-        return dynamoDBMapper.scan(Task.class, scanExpression);
+        return getTable().scan().items().stream().collect(Collectors.toList());
     }
 
+
     public void deleteTask(String taskId) {
-        dynamoDBMapper.delete(getTaskById(taskId));
+        Key key = Key.builder().partitionValue(taskId).build();
+        getTable().deleteItem(r -> r.key(key));
     }
+
 
     public Task updateTaskStatus(String taskId, String status) {
         Task task = getTaskById(taskId);
@@ -50,9 +66,9 @@ public class TaskRepositoryImpl implements TaskRepository {
             task.setStatus(status);
             saveTask(task);
         }
-
         return task;
     }
+
 
     public Task updateAssignedTo(String taskId, String userId) {
         Task task = getTaskById(taskId);
@@ -60,44 +76,88 @@ public class TaskRepositoryImpl implements TaskRepository {
             task.setAssignedTo(userId);
             saveTask(task);
         }
-
         return task;
     }
 
+
+//    public List<Task> getTasksByStatus(String status) {
+//        Expression expression = Expression.builder()
+//                .expression("status = :status")
+//                .expressionValues(Map.of(":status", AttributeValue.builder().s(status).build()))
+//                .build();
+//
+//        return getTable().scan(r -> r.filterExpression(expression))
+//                .items().stream().collect(Collectors.toList());
+//    }
+
     public List<Task> getTasksByStatus(String status) {
-        Task task = new Task();
-        task.setStatus(status);
+        DynamoDbIndex<Task> index = getTable().index("StatusIndex");
 
-        DynamoDBQueryExpression<Task> queryExpression = new DynamoDBQueryExpression<Task>()
-                .withHashKeyValues(task)
-                .withConsistentRead(false);
+        Expression expression = Expression.builder()
+                .expression("status = :status")
+                .expressionValues(Map.of(":status", AttributeValue.builder().s(status).build()))
+                .build();
 
-        return dynamoDBMapper.query(Task.class, queryExpression);
+        return index.query(r -> r.queryConditional(QueryConditional.keyEqualTo(k -> k.partitionValue(status)))
+                        .filterExpression(expression))
+                .stream()
+                .flatMap(page -> page.items().stream())
+                .collect(Collectors.toList());
     }
 
+
+
     public List<Task> getTasksByCreatedBy(String createdBy) {
-        Task task = new Task();
-        task.setCreatedBy(createdBy);
+        DynamoDbIndex<Task> index = getTable().index("CreatedByIndex"); // Replace "createdBy-index" with the actual index name
 
-        DynamoDBQueryExpression<Task> queryExpression = new DynamoDBQueryExpression<Task>()
-                .withHashKeyValues(task)
-                .withConsistentRead(false);
+        Expression expression = Expression.builder()
+                .expression("createdBy = :createdBy")
+                .expressionValues(Map.of(":createdBy", AttributeValue.builder().s(createdBy).build()))
+                .build();
 
-        return dynamoDBMapper.query(Task.class, queryExpression);
+        return index.query(r -> r.queryConditional(QueryConditional.keyEqualTo(k -> k.partitionValue(createdBy)))
+                        .filterExpression(expression))
+                .stream()
+                .flatMap(page -> page.items().stream())
+                .collect(Collectors.toList());
     }
 
     public List<Task> getTasksNearDeadline() {
-
         LocalDateTime oneHourFromNow = LocalDateTime.now().plusHours(1);
-        Task task = new Task();
-        task.setDeadline(oneHourFromNow);
+        DynamoDbIndex<Task> index = getTable().index("DeadlineIndex");
 
-        DynamoDBQueryExpression<Task> queryExpression = new DynamoDBQueryExpression<Task>()
-                .withHashKeyValues(task)
-                .withConsistentRead(false);
+        Expression expression = Expression.builder()
+                .expression("deadline <= :deadline")
+                .expressionValues(Map.of(":deadline", AttributeValue.builder().s(oneHourFromNow.toString()).build()))
+                .build();
 
-        return dynamoDBMapper.query(Task.class, queryExpression);
+        return index.query(r -> r.queryConditional(QueryConditional.sortLessThanOrEqualTo(k -> k.sortValue(oneHourFromNow.toString())))
+                        .filterExpression(expression))
+                .stream()
+                .flatMap(page -> page.items().stream())
+                .collect(Collectors.toList());
     }
+
+
+
+    public List<Task> getTasksNearDeadlineWholeTable() {
+        LocalDateTime oneHourFromNow = LocalDateTime.now().plusHours(1);
+        Expression expression = Expression.builder()
+                .expression("deadline <= :deadline")
+                .expressionValues(Map.of(":deadline", AttributeValue.builder().s(oneHourFromNow.toString()).build()))
+                .build();
+
+        ScanEnhancedRequest scanRequest = ScanEnhancedRequest.builder()
+                .filterExpression(expression)
+                .build();
+
+        return getTable().scan(scanRequest)
+                .items()
+                .stream()
+                .collect(Collectors.toList());
+    }
+
+
 
     public Task updateTaskComment(String taskId, String comment) {
         Task task = getTaskById(taskId);
@@ -107,6 +167,7 @@ public class TaskRepositoryImpl implements TaskRepository {
         }
         return task;
     }
+
 
     public void updateHasSentDeadlineNotification(String taskId, boolean hasSentNotification) {
         Task task = getTaskById(taskId);
