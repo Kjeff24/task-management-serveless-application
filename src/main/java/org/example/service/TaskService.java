@@ -1,7 +1,18 @@
 package org.example.service;
 
 import org.example.dto.TaskRequest;
+import org.example.model.Task;
+
+import java.util.List;
 
 public interface TaskService {
-    void createTask(TaskRequest task, String adminId);
+    Task createTask(TaskRequest task, String adminId);
+
+    Task assignTask(String taskId, String userId);
+
+    Task updateTaskStatus(String taskId, String status);
+
+    List<Task> getAllTasks();
+
+    List<Task> getTasksForUser(String userId);
 }
