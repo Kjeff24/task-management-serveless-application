@@ -22,7 +22,7 @@ public class TasksController {
     @Value("${app.aws.cognito.admin.group}")
     private String adminGroup;
 
-    @GetMapping
+    @GetMapping("/hello")
     public String hello( @AuthenticationPrincipal Jwt jwt) {
         List<String> groups = jwt.getClaimAsStringList("cognito:groups");
         String adminId = jwt.getSubject();

@@ -29,7 +29,6 @@ public class AwsConfig {
     private String secretKey;
     @Value("${app.aws.dynamodb.task.table}")
     private String taskTableName;
-//
 
     @Bean
     public SnsClient snsClient() {
