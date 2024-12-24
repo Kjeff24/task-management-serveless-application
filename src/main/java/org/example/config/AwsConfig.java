@@ -6,6 +6,8 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapperConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,6 +27,8 @@ public class AwsConfig {
     private String accessKey;
     @Value("${app.aws.secret.key}")
     private String secretKey;
+    @Value("${app.aws.dynamodb.task.table}")
+    private String taskTableName;
 //
 
     @Bean
@@ -45,6 +49,14 @@ public class AwsConfig {
                         AwsBasicCredentials.create(accessKey, secretKey)
                 ))
                 .build();
+    }
+
+    @Bean
+    public DynamoDBMapper dynamoDBMapper() {
+        DynamoDBMapperConfig config = DynamoDBMapperConfig.builder()
+                .withTableNameOverride(DynamoDBMapperConfig.TableNameOverride.withTableNameReplacement(taskTableName))
+                .build();
+        return new DynamoDBMapper(buildAmazonDynamoDB(), config);
     }
 
     private AmazonDynamoDB buildAmazonDynamoDB() {

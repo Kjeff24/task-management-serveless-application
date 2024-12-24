@@ -20,6 +20,14 @@ Parameters:
   AwsSecretKey:
     Type: String
     Description: The localhost of my frontend
+  UserPoolAdminGroupName:
+    Description: User pool group name for API administrators
+    Type: String
+    Default: apiAdmins
+  DynamodbTasksTableName:
+    Description: Dynamodb table for task
+    Type: String
+    Default: TasksTable
 
 Resources:
   # Lambda Function for API Gateway
@@ -62,6 +70,7 @@ Resources:
           TASKS_DEADLINE_TOPIC_ARN: !Ref TasksDeadlineNotificationTopic
           CLOSED_TASKS_TOPIC_ARN: !Ref ClosedTasksNotificationTopic
           REOPENED_TASKS_TOPIC_ARN: !Ref ReopenedTasksNotificationTopic
+          COGNITO_ADMIN_GROUP: !Ref UserPoolAdminGroupName
           COGNITO_USER_POOL_ID: !Ref UserPool
           TASKS_QUEUE_URL: !Ref SQSTaskQueue
       Events:
@@ -314,7 +323,7 @@ Resources:
     Type: AWS::Cognito::UserPoolGroup
     Properties:
       Description: User group for API Administrators
-      GroupName: ApiAdministrators
+      GroupName: !Ref UserPoolAdminGroupName
       Precedence: 0
       UserPoolId: !Ref UserPool
 
@@ -349,20 +358,16 @@ Resources:
   TasksTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: !Sub '${AWS::StackName}-Tasks'
+      TableName: !Ref DynamodbTasksTableName
       AttributeDefinitions:
         - AttributeName: taskId
           AttributeType: S
-#        - AttributeName: title
-#          AttributeType: S
-#        - AttributeName: description
-#          AttributeType: S
         - AttributeName: assignedTo
           AttributeType: S
         - AttributeName: status
           AttributeType: S
         - AttributeName: hasSentDeadlineNotification
-          AttributeType: S
+          AttributeType: N
         - AttributeName: deadline
           AttributeType: S
         - AttributeName: createdBy
@@ -602,6 +607,10 @@ Outputs:
     Description: AWS CLI command for Amazon Cognito User Pool information
     Value: !Sub "aws cognito-idp describe-user-pool-client --user-pool-id ${UserPool} --client-id ${UserPoolClient}"
 
+  UserPoolAdminGroupName:
+    Description: User Pool group name for API administrators
+    Value: !Ref UserPoolAdminGroupName
+
   TasksTable:
     Description: Dynamodb task table
-    Value: !Ref TasksTable
+    Value: !Ref DynamodbTasksTableName

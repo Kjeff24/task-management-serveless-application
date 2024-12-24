@@ -1,6 +1,8 @@
 package org.example.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.example.dto.TaskRequest;
+import org.example.mapper.TaskMapper;
 import org.example.model.Task;
 import org.example.repository.TaskRepository;
 import org.example.service.TaskService;
@@ -11,12 +13,15 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class TaskServiceImpl implements TaskService {
     private final TaskRepository taskRepository;
+    private final TaskMapper taskMapper;
 //    private final SqsService sqsService;
 
     @Value("${app.aws.dynamodb.task.table}")
     private String taskTableName;
 
-    public void createTask(Task task) {
+    public void createTask(TaskRequest taskRequest, String adminId) {
+        Task task = taskMapper.toTask(taskRequest, adminId);
+        System.out.println(task);
         taskRepository.saveTask(task);
 //        sqsService.sendToSQS(task);
     }
