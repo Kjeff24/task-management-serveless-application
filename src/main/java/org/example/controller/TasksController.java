@@ -25,28 +25,28 @@ public class TasksController {
     @GetMapping("/hello")
     public String hello( @AuthenticationPrincipal Jwt jwt) {
         List<String> groups = jwt.getClaimAsStringList("cognito:groups");
-        String adminId = jwt.getSubject();
-        return "groups: " + groups + ", id: " + adminId;
+        String adminEmail = jwt.getClaimAsString("email");
+        return "groups: " + groups + ", id: " + adminEmail;
     }
 
     @PostMapping
     public ResponseEntity<Task> createTask(@RequestBody TaskRequest task, @AuthenticationPrincipal Jwt jwt) {
         List<String> groups = jwt.getClaimAsStringList("cognito:groups");
-        String adminId = jwt.getSubject();
+        String adminEmail = jwt.getClaimAsString("email");
 
         if (groups != null && groups.contains(adminGroup)) {
-            return new ResponseEntity<>(taskService.createTask(task, adminId), HttpStatus.CREATED);
+            return new ResponseEntity<>(taskService.createTask(task, adminEmail), HttpStatus.CREATED);
         } else {
             throw new NotAuthorizedException("User does not have permission to create tasks.");
         }
     }
 
-    @PutMapping("/{taskId}/assign/{userId}")
-    public ResponseEntity<Task> assignTask(@PathVariable("taskId") String taskId, @PathVariable("userId") String userId, @AuthenticationPrincipal Jwt jwt) {
+    @PutMapping("/{taskId}/assign/{userEmail}")
+    public ResponseEntity<Task> assignTask(@PathVariable("taskId") String taskId, @PathVariable("userEmail") String userEmail, @AuthenticationPrincipal Jwt jwt) {
 
         List<String> groups = jwt.getClaimAsStringList("cognito:groups");
         if (groups != null && groups.contains(adminGroup)) {
-            return ResponseEntity.ok(taskService.assignTask(taskId, userId));
+            return ResponseEntity.ok(taskService.assignTask(taskId, userEmail));
         } else {
             throw new NotAuthorizedException("User does not have permission to create tasks.");
         }
@@ -61,7 +61,6 @@ public class TasksController {
     public ResponseEntity<List<Task>> getAllTasks(@AuthenticationPrincipal Jwt jwt) {
 
         List<String> groups = jwt.getClaimAsStringList("cognito:groups");
-        String adminId = jwt.getSubject();
 
         if (groups != null && groups.contains(adminGroup)) {
             return ResponseEntity.ok(taskService.getAllTasks());
@@ -70,16 +69,16 @@ public class TasksController {
         }
     }
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Task>> getTasksForUser(@PathVariable("userId") String userId, @AuthenticationPrincipal Jwt jwt) {
-        System.out.println("userId: " + userId);
-        return ResponseEntity.ok(taskService.getTasksForUser(userId));
+    @GetMapping("/user/{userEmail}")
+    public ResponseEntity<List<Task>> getTasksForUser(@PathVariable("userEmail") String userEmail, @AuthenticationPrincipal Jwt jwt) {
+        System.out.println("userEmail: " + userEmail);
+        return ResponseEntity.ok(taskService.getTasksForUser(userEmail));
     }
 
     @GetMapping("/user")
     public ResponseEntity<List<Task>> findAssignedTasksByUser(@AuthenticationPrincipal Jwt jwt) {
-        String userId = jwt.getSubject();
-        return ResponseEntity.ok(taskService.getTasksForUser(userId));
+        String userEmail = jwt.getClaimAsString("email");
+        return ResponseEntity.ok(taskService.getTasksForUser(userEmail));
     }
 
     @GetMapping("/find-task")
