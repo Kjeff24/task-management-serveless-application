@@ -46,3 +46,5 @@ template-2.yml
 template-3.yml
 
 samconfig.toml
+
+.env

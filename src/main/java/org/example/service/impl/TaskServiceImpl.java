@@ -2,6 +2,7 @@ package org.example.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.example.dto.TaskRequest;
+import org.example.exception.NotFoundException;
 import org.example.mapper.TaskMapper;
 import org.example.model.Task;
 import org.example.repository.TaskRepository;
@@ -23,18 +24,22 @@ public class TaskServiceImpl implements TaskService {
 
     public Task createTask(TaskRequest taskRequest, String adminId) {
         Task task = taskMapper.toTask(taskRequest, adminId);
-        System.out.println(task);
+        System.out.println(task.toString());
         taskRepository.saveTask(task);
 //        sqsService.sendToSQS(task);
         return task;
     }
 
     public Task assignTask(String taskId, String userId) {
-        return taskRepository.updateAssignedTo(taskId, userId);
+        Task task = taskRepository.updateAssignedTo(taskId, userId);
+        System.out.println(task.toString());
+        return task;
     }
 
     public Task updateTaskStatus(String taskId, String status) {
-        return taskRepository.updateTaskStatus(taskId, status);
+        Task task = taskRepository.updateTaskStatus(taskId, status);
+        System.out.println(task.toString());
+        return task;
     }
 
     public List<Task> getAllTasks() {
@@ -42,7 +47,22 @@ public class TaskServiceImpl implements TaskService {
     }
 
     public List<Task> getTasksForUser(String userId) {
-        return taskRepository.getTasksByAssignedTo(userId);
+        System.out.println("looking up tasks for user " + userId);
+        List<Task> tasks = taskRepository.getTasksByAssignedTo(userId);
+        System.out.println("found " + tasks.size() + " tasks" + tasks);
+        for (Task task : tasks) {
+            System.out.println(task.toString());
+        }
+        return tasks;
+    }
+
+    public Task getTaskById(String taskId) {
+        System.out.println("Looking up task with id " + taskId);
+        Task task = taskRepository.getTaskById(taskId).orElseThrow(
+                () -> new NotFoundException("Task not found")
+        );
+        System.out.println(task.toString());
+        return task;
     }
 
 

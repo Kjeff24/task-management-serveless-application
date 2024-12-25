@@ -15,4 +15,6 @@ public interface TaskService {
     List<Task> getAllTasks();
 
     List<Task> getTasksForUser(String userId);
+
+    Task getTaskById(String taskId);
 }
