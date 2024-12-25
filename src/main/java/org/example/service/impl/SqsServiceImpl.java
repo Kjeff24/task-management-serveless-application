@@ -18,7 +18,7 @@ public class SqsServiceImpl implements SqsService {
     private final SqsClient sqsClient;
     @Value("${app.sns.topics.tasks-assignment-arn}")
     private String tasksAssignmentTopicArn;
-    @Value("${app.sqs.task.url}")
+    @Value("${app.aws.sqs.task.url}")
     private String taskQueueUrl;
 
     public void sendToSQS(Task task) {
