@@ -57,7 +57,9 @@ Resources:
               - dynamodb:GetItem
               - dynamodb:Query
               - dynamodb:Scan
-            Resource: !GetAtt TasksTable.Arn
+            Resource:
+              - !GetAtt TasksTable.Arn
+              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamodbTasksTableName}/index/*
       Timeout: 30
       Environment:
         Variables:
