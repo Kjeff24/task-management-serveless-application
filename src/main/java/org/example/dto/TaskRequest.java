@@ -6,8 +6,8 @@ public record TaskRequest(
         String name,
         String description,
         String assignedTo,
-        LocalDateTime deadline,
-        String status
+        LocalDateTime deadline
+//        String status
 
 ) {
 }

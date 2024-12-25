@@ -42,7 +42,7 @@ public class TasksController {
     }
 
     @PutMapping("/{taskId}/assign/{userId}")
-    public ResponseEntity<Task> assignTask(@PathVariable String taskId, @PathVariable String userId, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<Task> assignTask(@PathVariable("taskId") String taskId, @PathVariable("userId") String userId, @AuthenticationPrincipal Jwt jwt) {
 
         List<String> groups = jwt.getClaimAsStringList("cognito:groups");
         if (groups != null && groups.contains(adminGroup)) {
@@ -53,7 +53,7 @@ public class TasksController {
     }
 
     @PutMapping("/{taskId}/status/{status}")
-    public ResponseEntity<Task> updateTaskStatus(@PathVariable String taskId, @PathVariable String status, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<Task> updateTaskStatus(@PathVariable("taskId") String taskId, @PathVariable("status") String status, @AuthenticationPrincipal Jwt jwt) {
         return ResponseEntity.ok(taskService.updateTaskStatus(taskId, status));
     }
 
@@ -71,7 +71,19 @@ public class TasksController {
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Task>> getTasksForUser(@PathVariable String userId, @AuthenticationPrincipal Jwt jwt) {
-            return ResponseEntity.ok(taskService.getTasksForUser(userId));
+    public ResponseEntity<List<Task>> getTasksForUser(@PathVariable("userId") String userId, @AuthenticationPrincipal Jwt jwt) {
+        System.out.println("userId: " + userId);
+        return ResponseEntity.ok(taskService.getTasksForUser(userId));
+    }
+
+    @GetMapping("/user")
+    public ResponseEntity<List<Task>> findAssignedTasksByUser(@AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt.getSubject();
+        return ResponseEntity.ok(taskService.getTasksForUser(userId));
+    }
+
+    @GetMapping("/find-task")
+    public ResponseEntity<Task> getTaskById(@RequestParam("taskId") String taskId) {
+        return ResponseEntity.ok(taskService.getTaskById(taskId));
     }
 }

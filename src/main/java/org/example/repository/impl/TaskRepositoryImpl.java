@@ -1,11 +1,13 @@
 package org.example.repository.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.example.exception.NotFoundException;
 import org.example.model.Task;
 import org.example.repository.TaskRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.*;
+import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -13,6 +15,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Repository
@@ -37,16 +40,24 @@ public class TaskRepositoryImpl implements TaskRepository {
     }
 
 
-    public Task getTaskById(String taskId) {
+    public Optional<Task> getTaskById(String taskId) {
         Key key = Key.builder().partitionValue(taskId).build();
-        return getTable().getItem(r -> r.key(key));
+        return Optional.ofNullable(getTable().getItem(r -> r.key(key)));
     }
 
 
     public List<Task> getTasksByAssignedTo(String assignedTo) {
-        return getTable().query(r -> r.queryConditional(
-                QueryConditional.keyEqualTo(k -> k.partitionValue(assignedTo)))).items().stream().collect(Collectors.toList());
+        DynamoDbIndex<Task> index = getTable().index("AssignedToIndex");
+
+        return index.query(r -> r.queryConditional(
+                        QueryConditional.keyEqualTo(k -> k.partitionValue(assignedTo))))
+                .stream()
+                .map(Page::items)
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
     }
+
+
 
 
     public List<Task> getAllTasks() {
@@ -61,34 +72,23 @@ public class TaskRepositoryImpl implements TaskRepository {
 
 
     public Task updateTaskStatus(String taskId, String status) {
-        Task task = getTaskById(taskId);
-        if (task != null) {
-            task.setStatus(status);
-            saveTask(task);
-        }
+        Task task = getTaskById(taskId).orElseThrow(
+                () -> new NotFoundException("Task not found")
+        );
+        task.setStatus(status);
+        saveTask(task);
         return task;
     }
 
 
     public Task updateAssignedTo(String taskId, String userId) {
-        Task task = getTaskById(taskId);
-        if (task != null) {
-            task.setAssignedTo(userId);
-            saveTask(task);
-        }
+        Task task = getTaskById(taskId).orElseThrow(
+                () -> new NotFoundException("Task not found")
+        );
+        task.setAssignedTo(userId);
+        saveTask(task);
         return task;
     }
-
-
-//    public List<Task> getTasksByStatus(String status) {
-//        Expression expression = Expression.builder()
-//                .expression("status = :status")
-//                .expressionValues(Map.of(":status", AttributeValue.builder().s(status).build()))
-//                .build();
-//
-//        return getTable().scan(r -> r.filterExpression(expression))
-//                .items().stream().collect(Collectors.toList());
-//    }
 
     public List<Task> getTasksByStatus(String status) {
         DynamoDbIndex<Task> index = getTable().index("StatusIndex");
@@ -108,7 +108,7 @@ public class TaskRepositoryImpl implements TaskRepository {
 
 
     public List<Task> getTasksByCreatedBy(String createdBy) {
-        DynamoDbIndex<Task> index = getTable().index("CreatedByIndex"); // Replace "createdBy-index" with the actual index name
+        DynamoDbIndex<Task> index = getTable().index("CreatedByIndex");
 
         Expression expression = Expression.builder()
                 .expression("createdBy = :createdBy")
@@ -160,20 +160,20 @@ public class TaskRepositoryImpl implements TaskRepository {
 
 
     public Task updateTaskComment(String taskId, String comment) {
-        Task task = getTaskById(taskId);
-        if (task != null) {
-            task.setUserComment(comment);
-            saveTask(task);
-        }
+        Task task = getTaskById(taskId).orElseThrow(
+                () -> new NotFoundException("Task not found")
+        );
+        task.setUserComment(comment);
+        saveTask(task);
         return task;
     }
 
 
     public void updateHasSentDeadlineNotification(String taskId, boolean hasSentNotification) {
-        Task task = getTaskById(taskId);
-        if (task != null) {
-            task.setHasSentDeadlineNotification(hasSentNotification ? 1 : 0);
-            saveTask(task);
-        }
+        Task task = getTaskById(taskId).orElseThrow(
+                () -> new NotFoundException("Task not found")
+        );
+        task.setHasSentDeadlineNotification(hasSentNotification ? 1 : 0);
+        saveTask(task);
     }
 }
