@@ -19,6 +19,10 @@ public class TaskServiceImpl implements TaskService {
     private final TaskRepository taskRepository;
     private final TaskMapper taskMapper;
     private final SqsService sqsService;
+    @Value("${app.aws.sns.topics.tasks.assignment.arn}")
+    private String tasksAssignmentTopicArn;
+    @Value("${app.aws.sns.topics.tasks.reopened.arn}")
+    private String reopenedTasksTopicArn;
 
     @Value("${app.aws.dynamodb.task.table}")
     private String taskTableName;
@@ -27,7 +31,7 @@ public class TaskServiceImpl implements TaskService {
         Task task = taskMapper.toTask(taskRequest, adminEmail);
         System.out.println(task.toString());
         taskRepository.saveTask(task);
-        sqsService.sendToSQS(task, "TASK CREATION NOTIFICATION");
+        sqsService.sendToSQS(task, "TASK CREATION NOTIFICATION", tasksAssignmentTopicArn);
         return task;
     }
 
@@ -39,7 +43,9 @@ public class TaskServiceImpl implements TaskService {
 
     public Task updateTaskStatus(String taskId, String status) {
         Task task = taskRepository.updateTaskStatus(taskId, status);
-        System.out.println(task.toString());
+        if (status.equals("open")) {
+            sqsService.sendToSQS(task, "TASK RE-OPEN NOTIFICATION", reopenedTasksTopicArn);
+        }
         return task;
     }
 
