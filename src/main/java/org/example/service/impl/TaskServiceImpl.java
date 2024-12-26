@@ -6,6 +6,7 @@ import org.example.exception.NotFoundException;
 import org.example.mapper.TaskMapper;
 import org.example.model.Task;
 import org.example.repository.TaskRepository;
+import org.example.service.SqsService;
 import org.example.service.TaskService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -17,7 +18,7 @@ import java.util.List;
 public class TaskServiceImpl implements TaskService {
     private final TaskRepository taskRepository;
     private final TaskMapper taskMapper;
-//    private final SqsService sqsService;
+    private final SqsService sqsService;
 
     @Value("${app.aws.dynamodb.task.table}")
     private String taskTableName;
@@ -26,7 +27,7 @@ public class TaskServiceImpl implements TaskService {
         Task task = taskMapper.toTask(taskRequest, adminEmail);
         System.out.println(task.toString());
         taskRepository.saveTask(task);
-//        sqsService.sendToSQS(task);
+        sqsService.sendToSQS(task, "TASK CREATION NOTIFICATION");
         return task;
     }
 

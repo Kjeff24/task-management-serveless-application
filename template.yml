@@ -68,6 +68,15 @@ Resources:
               - cognito-idp:AdminAddUserToGroup
               - cognito-idp:ListUsers
             Resource: !GetAtt UserPool.Arn
+        - Statement:
+            Effect: Allow
+            Action:
+              - sns:Subscribe
+            Resource:
+              - !Ref TasksAssignmentNotificationTopic
+              - !Ref TasksDeadlineNotificationTopic
+              - !Ref ClosedTasksNotificationTopic
+              - !Ref ReopenedTasksNotificationTopic
       Timeout: 30
       Environment:
         Variables:
@@ -434,14 +443,6 @@ Resources:
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
-#              - Effect: Allow
-#                Action:
-#                  - sns:Subscribe
-#                Resource:
-#                  - !Ref TasksAssignmentNotificationTopic
-#                  - !Ref TasksDeadlineNotificationTopic
-#                  - !Ref ClosedTasksNotificationTopic
-#                  - !Ref ReopenedTasksNotificationTopic
               - Effect: Allow
                 Action:
                   - lambda:InvokeFunction

@@ -16,22 +16,23 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SqsServiceImpl implements SqsService {
     private final SqsClient sqsClient;
-    @Value("${app.sns.topics.tasks-assignment-arn}")
+    @Value("${app.aws.sns.topics.tasks.assignment.arn}")
     private String tasksAssignmentTopicArn;
     @Value("${app.aws.sqs.task.url}")
     private String taskQueueUrl;
 
-    public void sendToSQS(Task task) {
+    public void sendToSQS(Task task, String subject) {
         String taskDetails = "Task ID: " + task.getTaskId() +
                 "\nTask Description: " + task.getDescription() +
+                "\nTask Name: " + task.getName() +
                 "\nTask Deadline: " + task.getDeadline() +
                 "\nTask Status: " + task.getStatus();
 
         Map<String, MessageAttributeValue> attributes = new HashMap<>();
         attributes.put("assignedTo", MessageAttributeValue.builder().dataType("String").stringValue(task.getAssignedTo()).build());
         attributes.put("createdBy", MessageAttributeValue.builder().dataType("String").stringValue(task.getCreatedBy()).build());
-        attributes.put("taskId", MessageAttributeValue.builder().dataType("String").stringValue(task.getTaskId()).build());
         attributes.put("snsTopicArn", MessageAttributeValue.builder().dataType("String").stringValue(tasksAssignmentTopicArn).build());
+        attributes.put("subject", MessageAttributeValue.builder().dataType("String").stringValue(subject).build());
         attributes.put("workflowType", MessageAttributeValue.builder().dataType("String").stringValue("publishToSNS").build());
 
         SendMessageRequest sendMessageRequest = SendMessageRequest.builder()
