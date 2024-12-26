@@ -10,13 +10,14 @@ import java.time.format.DateTimeFormatter;
 
 public class LocalDateTimeConverter implements AttributeConverter<LocalDateTime> {
 
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS");
 
     @Override
     public AttributeValue transformFrom(LocalDateTime localDateTime) {
         if (localDateTime == null) {
             return AttributeValue.builder().nul(true).build();
         }
+        // Store as a string in ISO format with nanoseconds
         return AttributeValue.builder().s(localDateTime.format(FORMATTER)).build();
     }
 
@@ -25,6 +26,7 @@ public class LocalDateTimeConverter implements AttributeConverter<LocalDateTime>
         if (attributeValue.s() == null) {
             return null;
         }
+        // Parse the stored string back into LocalDateTime
         return LocalDateTime.parse(attributeValue.s(), FORMATTER);
     }
 

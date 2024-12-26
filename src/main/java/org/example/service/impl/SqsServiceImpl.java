@@ -19,8 +19,9 @@ public class SqsServiceImpl implements SqsService {
     @Value("${app.aws.sqs.task.url}")
     private String taskQueueUrl;
 
-    public void sendToSQS(Task task, String subject, String topicArn) {
-        String taskDetails = "Task ID: " + task.getTaskId() +
+    public void sendToSQS(Task task, String subject, String message, String topicArn) {
+        String taskDetails = "Message: " + message +
+                "Task ID: " + task.getTaskId() +
                 "\nTask Description: " + task.getDescription() +
                 "\nTask Name: " + task.getName() +
                 "\nTask Deadline: " + task.getDeadline() +

@@ -1,7 +1,9 @@
 package org.example.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.dto.TaskRequest;
+import org.example.dto.TaskUpdateAssignedToRequest;
 import org.example.dto.TaskUpdateStatusRequest;
 import org.example.exception.NotAuthorizedException;
 import org.example.model.Task;
@@ -31,7 +33,7 @@ public class TasksController {
     }
 
     @PostMapping
-    public ResponseEntity<Task> createTask(@RequestBody TaskRequest task, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<Task> createTask(@Valid @RequestBody TaskRequest task, @AuthenticationPrincipal Jwt jwt) {
         List<String> groups = jwt.getClaimAsStringList("cognito:groups");
         String adminEmail = jwt.getClaimAsString("email");
 
@@ -42,25 +44,25 @@ public class TasksController {
         }
     }
 
-    @PutMapping("/{taskId}/assign/{userEmail}")
-    public ResponseEntity<Task> assignTask(@PathVariable("taskId") String taskId, @PathVariable("userEmail") String userEmail, @AuthenticationPrincipal Jwt jwt) {
+    @PutMapping("/assign")
+    public ResponseEntity<Task> assignTask(@Valid @RequestBody TaskUpdateAssignedToRequest request, @AuthenticationPrincipal Jwt jwt) {
 
         List<String> groups = jwt.getClaimAsStringList("cognito:groups");
         if (groups != null && groups.contains(adminGroup)) {
-            return ResponseEntity.ok(taskService.assignTask(taskId, userEmail));
+            return ResponseEntity.ok(taskService.assignTask(request));
         } else {
             throw new NotAuthorizedException("User does not have permission to create tasks.");
         }
     }
 
     @PutMapping("/status")
-    public ResponseEntity<Task> updateTaskStatus(@RequestBody TaskUpdateStatusRequest request, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<Task> updateTaskStatus(@Valid @RequestBody TaskUpdateStatusRequest request, @AuthenticationPrincipal Jwt jwt) {
 
         List<String> groups = jwt.getClaimAsStringList("cognito:groups");
         if (groups != null && groups.contains(adminGroup)) {
-            return ResponseEntity.ok(taskService.updateTaskStatus(request.taskId(), request.status()));
+            return ResponseEntity.ok(taskService.updateTaskStatus(request));
         } else if ("completed".equals(request.status())) {
-            return ResponseEntity.ok(taskService.updateTaskStatus(request.taskId(), request.status()));
+            return ResponseEntity.ok(taskService.updateTaskStatus(request));
         }else {
             throw new NotAuthorizedException("User does not have permission to create tasks.");
         }
