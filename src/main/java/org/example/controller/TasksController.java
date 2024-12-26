@@ -2,6 +2,7 @@ package org.example.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.example.dto.TaskRequest;
+import org.example.dto.TaskUpdateAssignedToRequest;
 import org.example.dto.TaskUpdateStatusRequest;
 import org.example.exception.NotAuthorizedException;
 import org.example.model.Task;
@@ -42,12 +43,12 @@ public class TasksController {
         }
     }
 
-    @PutMapping("/{taskId}/assign/{userEmail}")
-    public ResponseEntity<Task> assignTask(@PathVariable("taskId") String taskId, @PathVariable("userEmail") String userEmail, @AuthenticationPrincipal Jwt jwt) {
+    @PutMapping("/assign")
+    public ResponseEntity<Task> assignTask(@RequestBody TaskUpdateAssignedToRequest request, @AuthenticationPrincipal Jwt jwt) {
 
         List<String> groups = jwt.getClaimAsStringList("cognito:groups");
         if (groups != null && groups.contains(adminGroup)) {
-            return ResponseEntity.ok(taskService.assignTask(taskId, userEmail));
+            return ResponseEntity.ok(taskService.assignTask(request.taskId(), request.assignedTo()));
         } else {
             throw new NotAuthorizedException("User does not have permission to create tasks.");
         }

@@ -31,13 +31,13 @@ public class TaskServiceImpl implements TaskService {
         Task task = taskMapper.toTask(taskRequest, adminEmail);
         System.out.println(task.toString());
         taskRepository.saveTask(task);
-        sqsService.sendToSQS(task, "TASK CREATION NOTIFICATION", tasksAssignmentTopicArn);
+        sqsService.sendToSQS(task, "TASK ASSIGNMENT NOTIFICATION", tasksAssignmentTopicArn);
         return task;
     }
 
     public Task assignTask(String taskId, String userEmail) {
         Task task = taskRepository.updateAssignedTo(taskId, userEmail);
-        System.out.println(task.toString());
+        sqsService.sendToSQS(task, "TASK ASSIGNMENT NOTIFICATION", tasksAssignmentTopicArn);
         return task;
     }
 
