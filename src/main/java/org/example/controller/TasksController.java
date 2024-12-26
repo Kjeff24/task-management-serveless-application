@@ -23,7 +23,7 @@ public class TasksController {
     private String adminGroup;
 
     @GetMapping("/hello")
-    public String hello( @AuthenticationPrincipal Jwt jwt) {
+    public String hello(@AuthenticationPrincipal Jwt jwt) {
         List<String> groups = jwt.getClaimAsStringList("cognito:groups");
         String adminEmail = jwt.getClaimAsString("email");
         return "groups: " + groups + ", id: " + adminEmail;

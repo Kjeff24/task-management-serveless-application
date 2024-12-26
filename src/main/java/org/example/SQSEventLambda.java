@@ -76,22 +76,36 @@ public class SQSEventLambda implements RequestHandler<SQSEvent, Void> {
     private void handlePublishToSNS(SQSEvent.SQSMessage message, Context context) {
         context.getLogger().log("Processing PublishToSNS event: " + message);
 
-        String taskId = message.getMessageAttributes().get("taskId").getStringValue();
         String assignedTo = message.getMessageAttributes().get("assignedTo").getStringValue();
+        String createdBy = message.getMessageAttributes().get("createdBy").getStringValue();
         String snsTopicArn = message.getMessageAttributes().get("snsTopicArn").getStringValue();
+        String subject = message.getMessageAttributes().get("subject").getStringValue();
         String messageBody = message.getBody();
 
-        sendSNSNotification(assignedTo, taskId, snsTopicArn, messageBody, context);
+        sendSNSNotification(assignedTo, createdBy, snsTopicArn, messageBody, subject);
     }
 
-    private void sendSNSNotification(String assignedTo, String taskId, String snsTopicArn, String message, Context context) {
+    private void sendSNSNotification(String assignedTo, String createdBy, String snsTopicArn, String message, String subject) {
         Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
-        messageAttributes.put("assignedTo", MessageAttributeValue.builder().dataType("String").stringValue(assignedTo).build());
 
-        ensureSubscriptionFilter(snsTopicArn, assignedTo, context);
+        if (assignedTo != null && !assignedTo.isEmpty()) {
+            messageAttributes.put("assignedTo", MessageAttributeValue.builder()
+                    .dataType("String")
+                    .stringValue(assignedTo)
+                    .build());
+        }
+
+        if (createdBy != null && !createdBy.isEmpty()) {
+            messageAttributes.put("createdBy", MessageAttributeValue.builder()
+                    .dataType("String")
+                    .stringValue(createdBy)
+                    .build());
+        }
+
+        ensureSubscriptionFilter(snsTopicArn, assignedTo, createdBy);
 
         PublishRequest publishRequest = PublishRequest.builder()
-                .subject("Important Notification")
+                .subject(subject)
                 .topicArn(snsTopicArn)
                 .message(message)
                 .messageAttributes(messageAttributes)
@@ -100,7 +114,7 @@ public class SQSEventLambda implements RequestHandler<SQSEvent, Void> {
         snsClient.publish(publishRequest);
     }
 
-    private void ensureSubscriptionFilter(String snsTopicArn, String assignedTo, Context context) {
+    private void ensureSubscriptionFilter(String snsTopicArn, String assignedTo, String createdBy) {
         ListSubscriptionsByTopicResponse subscriptionsResponse = snsClient.listSubscriptionsByTopic(
                 ListSubscriptionsByTopicRequest.builder()
                         .topicArn(snsTopicArn)
@@ -121,10 +135,10 @@ public class SQSEventLambda implements RequestHandler<SQSEvent, Void> {
             );
 
             Map<String, String> attributes = attributesResponse.attributes();
-            String filterPolicy = attributes.get("FilterPolicy");
+            String endpoint = attributes.get("Endpoint");
 
-            if (filterPolicy == null || !filterPolicy.contains("\"assignedTo\":\"" + assignedTo + "\"")) {
-                String updatedFilterPolicy = String.format("{\"assignedTo\": [\"%s\"]}", assignedTo);
+            if (assignedTo.equals(endpoint)) {
+                String updatedFilterPolicy = String.format(String.format("{\"assignedTo\": [\"%s\"]}", assignedTo));
 
                 snsClient.setSubscriptionAttributes(
                         SetSubscriptionAttributesRequest.builder()
@@ -134,7 +148,33 @@ public class SQSEventLambda implements RequestHandler<SQSEvent, Void> {
                                 .build()
                 );
             }
+
+            if (createdBy.equals(endpoint)) {
+                String updatedFilterPolicy = String.format(String.format("{\"createdBy\": [\"%s\"]}", createdBy));
+
+
+                snsClient.setSubscriptionAttributes(
+                        SetSubscriptionAttributesRequest.builder()
+                                .subscriptionArn(subscriptionArn)
+                                .attributeName("FilterPolicy")
+                                .attributeValue(updatedFilterPolicy)
+                                .build()
+                );
+            }
+
+            if (!assignedTo.equals(endpoint) && !createdBy.equals(endpoint)) {
+                String defaultFilterPolicy = "{\"assignedTo\": [\"none\"]}";  // Or any other default logic
+                snsClient.setSubscriptionAttributes(
+                        SetSubscriptionAttributesRequest.builder()
+                                .subscriptionArn(subscriptionArn)
+                                .attributeName("FilterPolicy")
+                                .attributeValue(defaultFilterPolicy)
+                                .build()
+                );
+            }
+
         }
     }
+
 }
 
