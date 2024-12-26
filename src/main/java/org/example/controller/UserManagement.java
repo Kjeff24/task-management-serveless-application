@@ -1,5 +1,6 @@
 package org.example.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.dto.MessageResponse;
 import org.example.dto.UserRequest;
@@ -24,7 +25,7 @@ public class UserManagement {
     private String adminGroup;
 
     @PostMapping
-    public ResponseEntity<MessageResponse> createUser(@RequestBody UserRequest userRequest, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<MessageResponse> createUser(@Valid @RequestBody UserRequest userRequest, @AuthenticationPrincipal Jwt jwt) {
         List<String> groups = jwt.getClaimAsStringList("cognito:groups");
         if (groups != null && groups.contains(adminGroup)) {
             return ResponseEntity.ok(userManagementService.createUser(userRequest));

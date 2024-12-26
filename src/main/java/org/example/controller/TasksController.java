@@ -1,5 +1,6 @@
 package org.example.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.dto.TaskRequest;
 import org.example.dto.TaskUpdateAssignedToRequest;
@@ -32,7 +33,7 @@ public class TasksController {
     }
 
     @PostMapping
-    public ResponseEntity<Task> createTask(@RequestBody TaskRequest task, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<Task> createTask(@Valid @RequestBody TaskRequest task, @AuthenticationPrincipal Jwt jwt) {
         List<String> groups = jwt.getClaimAsStringList("cognito:groups");
         String adminEmail = jwt.getClaimAsString("email");
 
@@ -44,7 +45,7 @@ public class TasksController {
     }
 
     @PutMapping("/assign")
-    public ResponseEntity<Task> assignTask(@RequestBody TaskUpdateAssignedToRequest request, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<Task> assignTask(@Valid @RequestBody TaskUpdateAssignedToRequest request, @AuthenticationPrincipal Jwt jwt) {
 
         List<String> groups = jwt.getClaimAsStringList("cognito:groups");
         if (groups != null && groups.contains(adminGroup)) {
@@ -55,7 +56,7 @@ public class TasksController {
     }
 
     @PutMapping("/status")
-    public ResponseEntity<Task> updateTaskStatus(@RequestBody TaskUpdateStatusRequest request, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<Task> updateTaskStatus(@Valid @RequestBody TaskUpdateStatusRequest request, @AuthenticationPrincipal Jwt jwt) {
 
         List<String> groups = jwt.getClaimAsStringList("cognito:groups");
         if (groups != null && groups.contains(adminGroup)) {
