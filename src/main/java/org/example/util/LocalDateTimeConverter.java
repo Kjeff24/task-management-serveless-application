@@ -17,6 +17,7 @@ public class LocalDateTimeConverter implements AttributeConverter<LocalDateTime>
         if (localDateTime == null) {
             return AttributeValue.builder().nul(true).build();
         }
+        // Store as a string in ISO format with nanoseconds
         return AttributeValue.builder().s(localDateTime.format(FORMATTER)).build();
     }
 
@@ -25,6 +26,7 @@ public class LocalDateTimeConverter implements AttributeConverter<LocalDateTime>
         if (attributeValue.s() == null) {
             return null;
         }
+        // Parse the stored string back into LocalDateTime
         return LocalDateTime.parse(attributeValue.s(), FORMATTER);
     }
 

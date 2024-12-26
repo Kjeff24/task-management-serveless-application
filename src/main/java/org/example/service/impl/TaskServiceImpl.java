@@ -2,6 +2,8 @@ package org.example.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.example.dto.TaskRequest;
+import org.example.dto.TaskUpdateAssignedToRequest;
+import org.example.dto.TaskUpdateStatusRequest;
 import org.example.exception.NotFoundException;
 import org.example.mapper.TaskMapper;
 import org.example.model.Task;
@@ -24,27 +26,24 @@ public class TaskServiceImpl implements TaskService {
     @Value("${app.aws.sns.topics.tasks.reopened.arn}")
     private String reopenedTasksTopicArn;
 
-    @Value("${app.aws.dynamodb.task.table}")
-    private String taskTableName;
-
     public Task createTask(TaskRequest taskRequest, String adminEmail) {
         Task task = taskMapper.toTask(taskRequest, adminEmail);
         System.out.println(task.toString());
         taskRepository.saveTask(task);
-        sqsService.sendToSQS(task, "TASK ASSIGNMENT NOTIFICATION", tasksAssignmentTopicArn);
+        sqsService.sendToSQS(task, "TASK ASSIGNMENT NOTIFICATION", "New task created has been assigned to you", tasksAssignmentTopicArn);
         return task;
     }
 
-    public Task assignTask(String taskId, String userEmail) {
-        Task task = taskRepository.updateAssignedTo(taskId, userEmail);
-        sqsService.sendToSQS(task, "TASK ASSIGNMENT NOTIFICATION", tasksAssignmentTopicArn);
+    public Task assignTask(TaskUpdateAssignedToRequest request) {
+        Task task = taskRepository.updateAssignedTo(request);
+        sqsService.sendToSQS(task, "TASK RE-ASSIGNMENT NOTIFICATION","Task has been re-assigned to you", tasksAssignmentTopicArn);
         return task;
     }
 
-    public Task updateTaskStatus(String taskId, String status) {
-        Task task = taskRepository.updateTaskStatus(taskId, status);
-        if (status.equals("open")) {
-            sqsService.sendToSQS(task, "TASK RE-OPEN NOTIFICATION", reopenedTasksTopicArn);
+    public Task updateTaskStatus(TaskUpdateStatusRequest request) {
+        Task task = taskRepository.updateTaskStatus(request);
+        if (request.status().equals("open")) {
+            sqsService.sendToSQS(task, "TASK RE-OPEN NOTIFICATION", "Task has been re-opened, ensure you complete it", reopenedTasksTopicArn);
         }
         return task;
     }

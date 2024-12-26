@@ -1,6 +1,8 @@
 package org.example.service;
 
 import org.example.dto.TaskRequest;
+import org.example.dto.TaskUpdateAssignedToRequest;
+import org.example.dto.TaskUpdateStatusRequest;
 import org.example.model.Task;
 
 import java.util.List;
@@ -8,9 +10,9 @@ import java.util.List;
 public interface TaskService {
     Task createTask(TaskRequest task, String adminEmail);
 
-    Task assignTask(String taskId, String userEmail);
+    Task assignTask(TaskUpdateAssignedToRequest request);
 
-    Task updateTaskStatus(String taskId, String status);
+    Task updateTaskStatus(TaskUpdateStatusRequest request);
 
     List<Task> getAllTasks();
 

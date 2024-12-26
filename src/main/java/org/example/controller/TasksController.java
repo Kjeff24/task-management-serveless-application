@@ -49,7 +49,7 @@ public class TasksController {
 
         List<String> groups = jwt.getClaimAsStringList("cognito:groups");
         if (groups != null && groups.contains(adminGroup)) {
-            return ResponseEntity.ok(taskService.assignTask(request.taskId(), request.assignedTo()));
+            return ResponseEntity.ok(taskService.assignTask(request));
         } else {
             throw new NotAuthorizedException("User does not have permission to create tasks.");
         }
@@ -60,9 +60,9 @@ public class TasksController {
 
         List<String> groups = jwt.getClaimAsStringList("cognito:groups");
         if (groups != null && groups.contains(adminGroup)) {
-            return ResponseEntity.ok(taskService.updateTaskStatus(request.taskId(), request.status()));
+            return ResponseEntity.ok(taskService.updateTaskStatus(request));
         } else if ("completed".equals(request.status())) {
-            return ResponseEntity.ok(taskService.updateTaskStatus(request.taskId(), request.status()));
+            return ResponseEntity.ok(taskService.updateTaskStatus(request));
         }else {
             throw new NotAuthorizedException("User does not have permission to create tasks.");
         }

@@ -1,5 +1,7 @@
 package org.example.repository;
 
+import org.example.dto.TaskUpdateAssignedToRequest;
+import org.example.dto.TaskUpdateStatusRequest;
 import org.example.model.Task;
 
 import java.util.List;
@@ -8,9 +10,9 @@ import java.util.Optional;
 public interface TaskRepository {
     void saveTask(Task task);
 
-    Task updateAssignedTo(String taskId, String userId);
+    Task updateAssignedTo(TaskUpdateAssignedToRequest request);
 
-    Task updateTaskStatus(String taskId, String status);
+    Task updateTaskStatus(TaskUpdateStatusRequest request);
 
     List<Task> getAllTasks();
 
