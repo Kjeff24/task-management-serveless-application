@@ -32,4 +32,9 @@ public class GlobalExceptionHandler {
                 .stream().map(FieldError::getDefaultMessage).collect(Collectors.toList());
         return new ResponseEntity<>(errors, new HttpHeaders(), HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<MessageResponse> notFoundExceptionHandler(BadRequestException e) {
+        return new ResponseEntity<>(MessageResponse.builder().message(e.getMessage()).build(), HttpStatus.BAD_REQUEST);
+    }
 }

@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.dto.TaskRequest;
 import org.example.dto.TaskUpdateAssignedToRequest;
 import org.example.dto.TaskUpdateStatusRequest;
+import org.example.enums.TaskStatus;
 import org.example.exception.NotAuthorizedException;
 import org.example.model.Task;
 import org.example.service.TaskService;
@@ -59,12 +60,12 @@ public class TasksController {
     public ResponseEntity<Task> updateTaskStatus(@Valid @RequestBody TaskUpdateStatusRequest request, @AuthenticationPrincipal Jwt jwt) {
 
         List<String> groups = jwt.getClaimAsStringList("cognito:groups");
-        if (groups != null && groups.contains(adminGroup)) {
+        boolean isAdmin = groups != null && groups.contains(adminGroup);
+        boolean isCompleted = TaskStatus.completed.toString().equals(request.status());
+        if (isAdmin || isCompleted) {
             return ResponseEntity.ok(taskService.updateTaskStatus(request));
-        } else if ("completed".equals(request.status())) {
-            return ResponseEntity.ok(taskService.updateTaskStatus(request));
-        }else {
-            throw new NotAuthorizedException("User does not have permission to create tasks.");
+        } else {
+            throw new NotAuthorizedException("You are unauthorized to change task status to open.");
         }
     }
 
