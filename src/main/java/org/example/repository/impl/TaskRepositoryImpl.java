@@ -3,6 +3,8 @@ package org.example.repository.impl;
 import lombok.RequiredArgsConstructor;
 import org.example.dto.TaskUpdateAssignedToRequest;
 import org.example.dto.TaskUpdateStatusRequest;
+import org.example.enums.TaskStatus;
+import org.example.exception.BadRequestException;
 import org.example.exception.NotFoundException;
 import org.example.model.Task;
 import org.example.repository.TaskRepository;
@@ -69,16 +71,25 @@ public class TaskRepositoryImpl implements TaskRepository {
     }
 
     public Task updateTaskStatus(TaskUpdateStatusRequest request) {
-        Task task = getTaskById(request.taskId()).orElseThrow(
-                () -> new NotFoundException("Task not found")
-        );
-        task.setStatus(request.status());
-        if("completed".equals(request.status())) {
+        Task task = getTaskById(request.taskId()).orElseThrow(() -> new NotFoundException("Task not found"));
+
+        if (TaskStatus.open.toString().equals(request.status()) &&
+                LocalDateTime.parse(task.getDeadline(), FORMATTER).isBefore(LocalDateTime.now()) &&
+                request.newDeadline() == null) {
+            throw new BadRequestException("Deadline must be provided when setting the task status to open and the current deadline has passed.");
+        }
+
+        if(TaskStatus.completed.toString().equals(request.status())) {
             task.setCompletedAt(LocalDateTime.now().format(FORMATTER));
+        } else if (TaskStatus.open.toString().equals(request.status())) {
+            task.setCompletedAt("");
+
         }
         if(request.newDeadline() != null) {
             task.setDeadline(request.newDeadline().format(FORMATTER));
         }
+
+        task.setStatus(request.status());
         saveTask(task);
         return task;
     }

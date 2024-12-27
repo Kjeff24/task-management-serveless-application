@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.dto.TaskRequest;
 import org.example.dto.TaskUpdateAssignedToRequest;
 import org.example.dto.TaskUpdateStatusRequest;
+import org.example.enums.TaskStatus;
 import org.example.exception.NotFoundException;
 import org.example.mapper.TaskMapper;
 import org.example.model.Task;
@@ -44,9 +45,9 @@ public class TaskServiceImpl implements TaskService {
 
     public Task updateTaskStatus(TaskUpdateStatusRequest request) {
         Task task = taskRepository.updateTaskStatus(request);
-        if (request.status().equals("open")) {
+        if (request.status().equals(TaskStatus.open.toString())) {
             sqsService.sendToSQS(task, "TASK RE-OPEN NOTIFICATION", "Task has been re-opened, ensure you complete it", reopenedTasksTopicArn);
-        } else if (request.status().equals("completed")) {
+        } else if (request.status().equals(TaskStatus.completed.toString())) {
             sqsService.sendToSQS(task, "TASK COMPLETED NOTIFICATION", "Task has been successfully completed", closedTasksTopicArn);
         }
         return task;
