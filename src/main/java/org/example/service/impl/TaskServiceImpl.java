@@ -25,6 +25,8 @@ public class TaskServiceImpl implements TaskService {
     private String tasksAssignmentTopicArn;
     @Value("${app.aws.sns.topics.tasks.reopened.arn}")
     private String reopenedTasksTopicArn;
+    @Value("${app.aws.sns.topics.tasks.closed.arn}")
+    private String closedTasksTopicArn;
 
     public Task createTask(TaskRequest taskRequest, String adminEmail) {
         Task task = taskMapper.toTask(taskRequest, adminEmail);
@@ -44,6 +46,8 @@ public class TaskServiceImpl implements TaskService {
         Task task = taskRepository.updateTaskStatus(request);
         if (request.status().equals("open")) {
             sqsService.sendToSQS(task, "TASK RE-OPEN NOTIFICATION", "Task has been re-opened, ensure you complete it", reopenedTasksTopicArn);
+        } else if (request.status().equals("completed")) {
+            sqsService.sendToSQS(task, "TASK COMPLETED NOTIFICATION", "Task has been successfully completed", closedTasksTopicArn);
         }
         return task;
     }

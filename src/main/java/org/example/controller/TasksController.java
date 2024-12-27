@@ -64,7 +64,7 @@ public class TasksController {
         } else if ("completed".equals(request.status())) {
             return ResponseEntity.ok(taskService.updateTaskStatus(request));
         }else {
-            throw new NotAuthorizedException("User does not have permission to create tasks.");
+            throw new NotAuthorizedException("You are unauthorized to change task status to open.");
         }
     }
 

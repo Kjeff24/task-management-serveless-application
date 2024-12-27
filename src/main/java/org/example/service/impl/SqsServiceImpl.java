@@ -21,7 +21,7 @@ public class SqsServiceImpl implements SqsService {
 
     public void sendToSQS(Task task, String subject, String message, String topicArn) {
         String taskDetails = "Message: " + message +
-                "Task ID: " + task.getTaskId() +
+                "\nTask ID: " + task.getTaskId() +
                 "\nTask Description: " + task.getDescription() +
                 "\nTask Name: " + task.getName() +
                 "\nTask Deadline: " + task.getDeadline() +
