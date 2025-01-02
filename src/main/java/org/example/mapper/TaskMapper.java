@@ -11,10 +11,8 @@ import java.util.UUID;
 public class TaskMapper {
 
     public Task toTask(TaskRequest taskRequest, String adminId) {
-        // Define the desired format
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm");
 
-        // Format the LocalDateTime as a string
         String formattedDeadline = taskRequest.deadline() != null
                 ? taskRequest.deadline().format(formatter)
                 : null;

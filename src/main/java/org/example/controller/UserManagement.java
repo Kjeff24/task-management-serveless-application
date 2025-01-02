@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.dto.MessageResponse;
 import org.example.dto.UserRequest;
+import org.example.dto.UserResponse;
 import org.example.service.UserManagementService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/user-management")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('apiAdmins')")
+@PreAuthorize("hasRole('APIADMINS')")
 public class UserManagement {
     private final UserManagementService userManagementService;
 
@@ -26,7 +27,7 @@ public class UserManagement {
     }
 
     @GetMapping
-    public ResponseEntity<List<UserType>> getAllUsers() {
+    public ResponseEntity<List<UserResponse>> getAllUsers() {
         return ResponseEntity.ok(userManagementService.getAllUsers());
     }
 

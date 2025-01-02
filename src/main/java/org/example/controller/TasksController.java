@@ -35,14 +35,14 @@ public class TasksController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('apiAdmins')")
+    @PreAuthorize("hasRole('APIADMINS')")
     public ResponseEntity<List<Task>> getAllTasks() {
 
         return ResponseEntity.ok(taskService.getAllTasks());
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('apiAdmins')")
+    @PreAuthorize("hasRole('APIADMINS')")
     public ResponseEntity<Task> createTask(@Valid @RequestBody TaskRequest task, @AuthenticationPrincipal Jwt jwt) {
         String adminEmail = jwt.getClaimAsString("email");
         return new ResponseEntity<>(taskService.createTask(task, adminEmail), HttpStatus.CREATED);
@@ -50,7 +50,7 @@ public class TasksController {
     }
 
     @PutMapping("/assign")
-    @PreAuthorize("hasRole('apiAdmins')")
+    @PreAuthorize("hasRole('APIADMINS')")
     public ResponseEntity<Task> assignTask(@Valid @RequestBody TaskUpdateAssignedToRequest request) {
         return ResponseEntity.ok(taskService.assignTask(request));
     }
