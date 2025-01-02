@@ -12,6 +12,7 @@ import org.example.service.TaskService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -33,27 +34,25 @@ public class TasksController {
         return "groups: " + groups + ", id: " + adminEmail;
     }
 
-    @PostMapping
-    public ResponseEntity<Task> createTask(@Valid @RequestBody TaskRequest task, @AuthenticationPrincipal Jwt jwt) {
-        List<String> groups = jwt.getClaimAsStringList("cognito:groups");
-        String adminEmail = jwt.getClaimAsString("email");
+    @GetMapping
+    @PreAuthorize("hasRole('apiAdmins')")
+    public ResponseEntity<List<Task>> getAllTasks() {
 
-        if (groups != null && groups.contains(adminGroup)) {
-            return new ResponseEntity<>(taskService.createTask(task, adminEmail), HttpStatus.CREATED);
-        } else {
-            throw new NotAuthorizedException("User does not have permission to create tasks.");
-        }
+        return ResponseEntity.ok(taskService.getAllTasks());
+    }
+
+    @PostMapping
+    @PreAuthorize("hasRole('apiAdmins')")
+    public ResponseEntity<Task> createTask(@Valid @RequestBody TaskRequest task, @AuthenticationPrincipal Jwt jwt) {
+        String adminEmail = jwt.getClaimAsString("email");
+        return new ResponseEntity<>(taskService.createTask(task, adminEmail), HttpStatus.CREATED);
+
     }
 
     @PutMapping("/assign")
-    public ResponseEntity<Task> assignTask(@Valid @RequestBody TaskUpdateAssignedToRequest request, @AuthenticationPrincipal Jwt jwt) {
-
-        List<String> groups = jwt.getClaimAsStringList("cognito:groups");
-        if (groups != null && groups.contains(adminGroup)) {
-            return ResponseEntity.ok(taskService.assignTask(request));
-        } else {
-            throw new NotAuthorizedException("User does not have permission to create tasks.");
-        }
+    @PreAuthorize("hasRole('apiAdmins')")
+    public ResponseEntity<Task> assignTask(@Valid @RequestBody TaskUpdateAssignedToRequest request) {
+        return ResponseEntity.ok(taskService.assignTask(request));
     }
 
     @PutMapping("/status")
@@ -69,20 +68,8 @@ public class TasksController {
         }
     }
 
-    @GetMapping
-    public ResponseEntity<List<Task>> getAllTasks(@AuthenticationPrincipal Jwt jwt) {
-
-        List<String> groups = jwt.getClaimAsStringList("cognito:groups");
-
-        if (groups != null && groups.contains(adminGroup)) {
-            return ResponseEntity.ok(taskService.getAllTasks());
-        } else {
-            throw new NotAuthorizedException("User does not have permission to create tasks.");
-        }
-    }
-
     @GetMapping("/user/{userEmail}")
-    public ResponseEntity<List<Task>> getTasksForUser(@PathVariable("userEmail") String userEmail, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<List<Task>> getTasksForUser(@PathVariable("userEmail") String userEmail) {
         System.out.println("userEmail: " + userEmail);
         return ResponseEntity.ok(taskService.getTasksForUser(userEmail));
     }

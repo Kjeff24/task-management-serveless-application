@@ -4,6 +4,7 @@ import org.example.dto.MessageResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -36,5 +37,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<MessageResponse> notFoundExceptionHandler(BadRequestException e) {
         return new ResponseEntity<>(MessageResponse.builder().message(e.getMessage()).build(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<MessageResponse> accessDeniedHandler(AccessDeniedException e) {
+        return new ResponseEntity<>(MessageResponse.builder().message("You do not have permission to access this resource.").build(), HttpStatus.FORBIDDEN);
     }
 }

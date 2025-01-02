@@ -10,8 +10,6 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
 
-import java.net.URI;
-
 @Configuration
 public class AwsConfig {
     @Value("${app.aws.region}")
