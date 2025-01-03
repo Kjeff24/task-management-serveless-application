@@ -33,6 +33,8 @@ public class UserManagementServiceImpl implements UserManagementService {
     private String tasksClosedTopicArn;
     @Value("${app.aws.sns.topics.tasks.deadline.arn}")
     private String tasksDeadlineTopicArn;
+    @Value("${app.aws.cognito.admin.group}")
+    private String adminGroup;
 
 
     public MessageResponse createUser(UserRequest userRequest) {
@@ -70,7 +72,18 @@ public class UserManagementServiceImpl implements UserManagementService {
             ListUsersResponse response = cognitoIdentityProviderClient.listUsers(listUsersRequest);
 
             for (UserType user : response.users()) {
-                allUserResponses.add(userMapper.toUserResponse(user));
+                boolean isInApiAdminsGroup = cognitoIdentityProviderClient.adminListGroupsForUser(
+                                AdminListGroupsForUserRequest.builder()
+                                        .username(user.username())
+                                        .userPoolId(userPoolId)
+                                        .build()
+                        ).groups().stream()
+                        .anyMatch(group -> adminGroup.equals(group.groupName()));
+
+                if (!isInApiAdminsGroup) {
+                    UserResponse userResponse = userMapper.toUserResponse(user);
+                    allUserResponses.add(userResponse);
+                }
             }
 
             paginationToken = response.paginationToken();
