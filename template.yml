@@ -66,6 +66,7 @@ Resources:
               - cognito-idp:AdminCreateUser
               - cognito-idp:AdminSetUserPassword
               - cognito-idp:AdminAddUserToGroup
+              - cognito-idp:AdminListGroupsForUser
               - cognito-idp:ListUsers
             Resource: !GetAtt UserPool.Arn
         - Statement:

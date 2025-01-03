@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.dto.TaskRequest;
 import org.example.dto.TaskUpdateAssignedToRequest;
 import org.example.dto.TaskUpdateStatusRequest;
+import org.example.dto.UserCommentRequest;
 import org.example.enums.TaskStatus;
 import org.example.exception.NotAuthorizedException;
 import org.example.model.Task;
@@ -70,7 +71,6 @@ public class TasksController {
 
     @GetMapping("/user/{userEmail}")
     public ResponseEntity<List<Task>> getTasksForUser(@PathVariable("userEmail") String userEmail) {
-        System.out.println("userEmail: " + userEmail);
         return ResponseEntity.ok(taskService.getTasksForUser(userEmail));
     }
 
@@ -83,5 +83,10 @@ public class TasksController {
     @GetMapping("/find-task")
     public ResponseEntity<Task> getTaskById(@RequestParam("taskId") String taskId) {
         return ResponseEntity.ok(taskService.getTaskById(taskId));
+    }
+
+    @PutMapping("/comment")
+    public ResponseEntity<Task> addUserComment(@Valid @RequestBody UserCommentRequest request) {
+        return ResponseEntity.ok(taskService.addUserComment(request));
     }
 }

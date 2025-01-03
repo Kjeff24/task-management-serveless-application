@@ -3,6 +3,7 @@ package org.example.repository.impl;
 import lombok.RequiredArgsConstructor;
 import org.example.dto.TaskUpdateAssignedToRequest;
 import org.example.dto.TaskUpdateStatusRequest;
+import org.example.dto.UserCommentRequest;
 import org.example.enums.TaskStatus;
 import org.example.exception.BadRequestException;
 import org.example.exception.NotFoundException;
@@ -45,12 +46,19 @@ public class TaskRepositoryImpl implements TaskRepository {
         getTable().putItem(task);
     }
 
-    public Optional<Task> getTaskById(String taskId) {
+    public Optional<Task> findByTaskId(String taskId) {
         Key key = Key.builder().partitionValue(taskId).build();
         return Optional.ofNullable(getTable().getItem(r -> r.key(key)));
     }
 
-    public List<Task> getTasksByAssignedTo(String assignedTo) {
+    public Task setComment(UserCommentRequest request) {
+        Task task = findByTaskId(request.taskId()).orElseThrow(() -> new NotFoundException("Task not found"));
+        task.setUserComment(request.comment());
+        saveTask(task);
+        return task;
+    }
+
+    public List<Task> findAllTasksByAssignedTo(String assignedTo) {
         DynamoDbIndex<Task> index = getTable().index("AssignedToIndex");
 
         return index.query(r -> r.queryConditional(
@@ -61,7 +69,7 @@ public class TaskRepositoryImpl implements TaskRepository {
                 .collect(Collectors.toList());
     }
 
-    public List<Task> getAllTasks() {
+    public List<Task> findAllTasks() {
         return getTable().scan().items().stream().collect(Collectors.toList());
     }
 
@@ -71,7 +79,7 @@ public class TaskRepositoryImpl implements TaskRepository {
     }
 
     public Task updateTaskStatus(TaskUpdateStatusRequest request) {
-        Task task = getTaskById(request.taskId()).orElseThrow(() -> new NotFoundException("Task not found"));
+        Task task = findByTaskId(request.taskId()).orElseThrow(() -> new NotFoundException("Task not found"));
 
         if (TaskStatus.open.toString().equals(request.status()) &&
                 LocalDateTime.parse(task.getDeadline(), FORMATTER).isBefore(LocalDateTime.now()) &&
@@ -95,7 +103,7 @@ public class TaskRepositoryImpl implements TaskRepository {
     }
 
     public Task updateAssignedTo(TaskUpdateAssignedToRequest request) {
-        Task task = getTaskById(request.taskId()).orElseThrow(
+        Task task = findByTaskId(request.taskId()).orElseThrow(
                 () -> new NotFoundException("Task not found")
         );
         task.setAssignedTo(request.assignedTo());
@@ -167,7 +175,7 @@ public class TaskRepositoryImpl implements TaskRepository {
     }
 
     public Task updateTaskComment(String taskId, String comment) {
-        Task task = getTaskById(taskId).orElseThrow(
+        Task task = findByTaskId(taskId).orElseThrow(
                 () -> new NotFoundException("Task not found")
         );
         task.setUserComment(comment);
@@ -176,7 +184,7 @@ public class TaskRepositoryImpl implements TaskRepository {
     }
 
     public void updateHasSentDeadlineNotification(String taskId, boolean hasSentNotification) {
-        Task task = getTaskById(taskId).orElseThrow(
+        Task task = findByTaskId(taskId).orElseThrow(
                 () -> new NotFoundException("Task not found")
         );
         task.setHasSentDeadlineNotification(hasSentNotification ? 1 : 0);

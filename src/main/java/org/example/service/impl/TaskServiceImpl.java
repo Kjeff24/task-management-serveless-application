@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.dto.TaskRequest;
 import org.example.dto.TaskUpdateAssignedToRequest;
 import org.example.dto.TaskUpdateStatusRequest;
+import org.example.dto.UserCommentRequest;
 import org.example.enums.TaskStatus;
 import org.example.exception.NotFoundException;
 import org.example.mapper.TaskMapper;
@@ -31,7 +32,6 @@ public class TaskServiceImpl implements TaskService {
 
     public Task createTask(TaskRequest taskRequest, String adminEmail) {
         Task task = taskMapper.toTask(taskRequest, adminEmail);
-        System.out.println(task.toString());
         taskRepository.saveTask(task);
         sqsService.sendToSQS(task, "TASK ASSIGNMENT NOTIFICATION", "New task created has been assigned to you", tasksAssignmentTopicArn);
         return task;
@@ -54,26 +54,21 @@ public class TaskServiceImpl implements TaskService {
     }
 
     public List<Task> getAllTasks() {
-        return taskRepository.getAllTasks();
+        return taskRepository.findAllTasks();
     }
 
     public List<Task> getTasksForUser(String userEmail) {
-        System.out.println("looking up tasks for user " + userEmail);
-        List<Task> tasks = taskRepository.getTasksByAssignedTo(userEmail);
-        System.out.println("found " + tasks.size() + " tasks" + tasks);
-        for (Task task : tasks) {
-            System.out.println(task.toString());
-        }
-        return tasks;
+        return taskRepository.findAllTasksByAssignedTo(userEmail);
     }
 
     public Task getTaskById(String taskId) {
-        System.out.println("Looking up task with id " + taskId);
-        Task task = taskRepository.getTaskById(taskId).orElseThrow(
+        return taskRepository.findByTaskId(taskId).orElseThrow(
                 () -> new NotFoundException("Task not found")
         );
-        System.out.println(task.toString());
-        return task;
+    }
+
+    public Task addUserComment(UserCommentRequest request) {
+        return taskRepository.setComment(request);
     }
 
 
