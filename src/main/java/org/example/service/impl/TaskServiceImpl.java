@@ -58,22 +58,13 @@ public class TaskServiceImpl implements TaskService {
     }
 
     public List<Task> getTasksForUser(String userEmail) {
-        System.out.println("looking up tasks for user " + userEmail);
-        List<Task> tasks = taskRepository.getTasksByAssignedTo(userEmail);
-        System.out.println("found " + tasks.size() + " tasks" + tasks);
-        for (Task task : tasks) {
-            System.out.println(task.toString());
-        }
-        return tasks;
+        return taskRepository.getTasksByAssignedTo(userEmail);
     }
 
     public Task getTaskById(String taskId) {
-        System.out.println("Looking up task with id " + taskId);
-        Task task = taskRepository.getTaskById(taskId).orElseThrow(
+        return taskRepository.getTaskById(taskId).orElseThrow(
                 () -> new NotFoundException("Task not found")
         );
-        System.out.println(task.toString());
-        return task;
     }
 
 
