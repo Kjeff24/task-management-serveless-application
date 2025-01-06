@@ -20,6 +20,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -66,13 +67,16 @@ public class TaskRepositoryImpl implements TaskRepository {
                 .stream()
                 .map(Page::items)
                 .flatMap(List::stream)
+                .sorted(Comparator.comparing(Task::getDeadline, Comparator.nullsLast(Comparator.naturalOrder())))
                 .toList();
 
         return toTaskResponse(allTaskByAssignedTo);
     }
 
     public TaskResponse findAllTasks() {
-        List<Task> allTasks = getTable().scan().items().stream().toList();
+        List<Task> allTasks = getTable().scan().items().stream()
+                .sorted(Comparator.comparing(Task::getDeadline, Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
         return toTaskResponse(allTasks);
     }
 
