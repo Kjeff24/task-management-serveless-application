@@ -1,6 +1,7 @@
 package org.example.mapper;
 
 import org.example.dto.TaskRequest;
+import org.example.enums.TaskStatus;
 import org.example.model.Task;
 import org.springframework.stereotype.Service;
 
@@ -21,7 +22,7 @@ public class TaskMapper {
                 .name(taskRequest.name())
                 .description(taskRequest.description())
                 .assignedTo(taskRequest.assignedTo())
-                .status("open")
+                .status(TaskStatus.open.toString())
                 .deadline(formattedDeadline)
                 .hasSentDeadlineNotification(0)
                 .createdBy(adminId)
