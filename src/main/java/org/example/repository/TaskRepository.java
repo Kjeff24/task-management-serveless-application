@@ -1,5 +1,6 @@
 package org.example.repository;
 
+import org.example.dto.TaskResponse;
 import org.example.dto.TaskUpdateAssignedToRequest;
 import org.example.dto.TaskUpdateStatusRequest;
 import org.example.dto.UserCommentRequest;
@@ -15,9 +16,9 @@ public interface TaskRepository {
 
     Task updateTaskStatus(TaskUpdateStatusRequest request);
 
-    List<Task> findAllTasks();
+    TaskResponse findAllTasks();
 
-    List<Task> findAllTasksByAssignedTo(String userId);
+    TaskResponse findAllTasksByAssignedTo(String userId);
 
     Optional<Task> findByTaskId(String taskId);
 

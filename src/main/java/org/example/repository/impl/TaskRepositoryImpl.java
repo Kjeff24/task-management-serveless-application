@@ -1,6 +1,7 @@
 package org.example.repository.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.example.dto.TaskResponse;
 import org.example.dto.TaskUpdateAssignedToRequest;
 import org.example.dto.TaskUpdateStatusRequest;
 import org.example.dto.UserCommentRequest;
@@ -58,19 +59,21 @@ public class TaskRepositoryImpl implements TaskRepository {
         return task;
     }
 
-    public List<Task> findAllTasksByAssignedTo(String assignedTo) {
+    public TaskResponse findAllTasksByAssignedTo(String assignedTo) {
         DynamoDbIndex<Task> index = getTable().index("AssignedToIndex");
-
-        return index.query(r -> r.queryConditional(
+        List<Task> allTaskByAssignedTo = index.query(r -> r.queryConditional(
                         QueryConditional.keyEqualTo(k -> k.partitionValue(assignedTo))))
                 .stream()
                 .map(Page::items)
                 .flatMap(List::stream)
-                .collect(Collectors.toList());
+                .toList();
+
+        return toTaskResponse(allTaskByAssignedTo);
     }
 
-    public List<Task> findAllTasks() {
-        return getTable().scan().items().stream().collect(Collectors.toList());
+    public TaskResponse findAllTasks() {
+        List<Task> allTasks = getTable().scan().items().stream().toList();
+        return toTaskResponse(allTasks);
     }
 
     public void deleteTask(String taskId) {
@@ -87,13 +90,13 @@ public class TaskRepositoryImpl implements TaskRepository {
             throw new BadRequestException("Deadline must be provided when setting the task status to open and the current deadline has passed.");
         }
 
-        if(TaskStatus.completed.toString().equals(request.status())) {
+        if (TaskStatus.completed.toString().equals(request.status())) {
             task.setCompletedAt(LocalDateTime.now().format(FORMATTER));
         } else if (TaskStatus.open.toString().equals(request.status())) {
             task.setCompletedAt("");
 
         }
-        if(request.newDeadline() != null) {
+        if (request.newDeadline() != null) {
             task.setDeadline(request.newDeadline().format(FORMATTER));
         }
 
@@ -189,5 +192,20 @@ public class TaskRepositoryImpl implements TaskRepository {
         );
         task.setHasSentDeadlineNotification(hasSentNotification ? 1 : 0);
         saveTask(task);
+    }
+
+    private TaskResponse toTaskResponse(List<Task> tasks) {
+        List<Task> completedTasks = tasks.stream()
+                .filter(task -> TaskStatus.completed.toString().equalsIgnoreCase(task.getStatus()))
+                .toList();
+
+        List<Task> openTasks = tasks.stream()
+                .filter(task -> TaskStatus.open.toString().equalsIgnoreCase(task.getStatus()))
+                .toList();
+
+        return TaskResponse.builder()
+                .open(openTasks)
+                .completed(completedTasks)
+                .build();
     }
 }

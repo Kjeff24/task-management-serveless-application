@@ -1,10 +1,7 @@
 package org.example.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.example.dto.TaskRequest;
-import org.example.dto.TaskUpdateAssignedToRequest;
-import org.example.dto.TaskUpdateStatusRequest;
-import org.example.dto.UserCommentRequest;
+import org.example.dto.*;
 import org.example.enums.TaskStatus;
 import org.example.exception.NotFoundException;
 import org.example.mapper.TaskMapper;
@@ -53,11 +50,11 @@ public class TaskServiceImpl implements TaskService {
         return task;
     }
 
-    public List<Task> getAllTasks() {
+    public TaskResponse getAllTasks() {
         return taskRepository.findAllTasks();
     }
 
-    public List<Task> getTasksForUser(String userEmail) {
+    public TaskResponse getTasksForUser(String userEmail) {
         return taskRepository.findAllTasksByAssignedTo(userEmail);
     }
 

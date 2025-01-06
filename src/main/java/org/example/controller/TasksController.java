@@ -2,10 +2,7 @@ package org.example.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.example.dto.TaskRequest;
-import org.example.dto.TaskUpdateAssignedToRequest;
-import org.example.dto.TaskUpdateStatusRequest;
-import org.example.dto.UserCommentRequest;
+import org.example.dto.*;
 import org.example.enums.TaskStatus;
 import org.example.exception.NotAuthorizedException;
 import org.example.model.Task;
@@ -37,7 +34,7 @@ public class TasksController {
 
     @GetMapping
     @PreAuthorize("hasRole('APIADMINS')")
-    public ResponseEntity<List<Task>> getAllTasks() {
+    public ResponseEntity<TaskResponse> getAllTasks() {
 
         return ResponseEntity.ok(taskService.getAllTasks());
     }
@@ -70,12 +67,12 @@ public class TasksController {
     }
 
     @GetMapping("/user/{userEmail}")
-    public ResponseEntity<List<Task>> getTasksForUser(@PathVariable("userEmail") String userEmail) {
+    public ResponseEntity<TaskResponse> getTasksForUser(@PathVariable("userEmail") String userEmail) {
         return ResponseEntity.ok(taskService.getTasksForUser(userEmail));
     }
 
     @GetMapping("/user")
-    public ResponseEntity<List<Task>> findAssignedTasksByUser(@AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<TaskResponse> findAssignedTasksByUser(@AuthenticationPrincipal Jwt jwt) {
         String userEmail = jwt.getClaimAsString("email");
         return ResponseEntity.ok(taskService.getTasksForUser(userEmail));
     }
