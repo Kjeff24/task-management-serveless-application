@@ -1,9 +1,6 @@
 package org.example.repository;
 
-import org.example.dto.TaskResponse;
-import org.example.dto.TaskUpdateAssignedToRequest;
-import org.example.dto.TaskUpdateStatusRequest;
-import org.example.dto.UserCommentRequest;
+import org.example.dto.*;
 import org.example.model.Task;
 
 import java.util.List;
