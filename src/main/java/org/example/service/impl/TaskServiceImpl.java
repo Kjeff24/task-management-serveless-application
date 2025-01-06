@@ -9,6 +9,7 @@ import org.example.model.Task;
 import org.example.repository.TaskRepository;
 import org.example.service.SqsService;
 import org.example.service.TaskService;
+import org.example.util.LocalDateTimeConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -66,6 +67,22 @@ public class TaskServiceImpl implements TaskService {
 
     public Task addUserComment(UserCommentRequest request) {
         return taskRepository.setComment(request);
+    }
+
+    public Task updateTask(TaskRequest taskRequest, String taskId) {
+        Task taskToUpdate = getTaskById(taskId);
+        taskToUpdate.setName(taskRequest.name());
+        taskToUpdate.setDescription(taskRequest.description());
+        taskToUpdate.setDeadline(taskRequest.deadline().format(LocalDateTimeConverter.FORMATTER));
+
+        if(!taskToUpdate.getAssignedTo().equalsIgnoreCase(taskRequest.assignedTo())) {
+            taskToUpdate.setAssignedTo(taskRequest.assignedTo());
+            sqsService.sendToSQS(taskToUpdate, "TASK RE-ASSIGNMENT NOTIFICATION","Task has been re-assigned to you", tasksAssignmentTopicArn);
+        }
+
+        taskRepository.saveTask(taskToUpdate);
+
+        return taskToUpdate;
     }
 
 

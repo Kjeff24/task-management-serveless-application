@@ -40,7 +40,7 @@ public class UserManagementServiceImpl implements UserManagementService {
     public MessageResponse createUser(UserRequest userRequest) {
         List<AttributeType> userAttributes = new ArrayList<>();
         userAttributes.add(AttributeType.builder().name("email").value(userRequest.email()).build());
-//        userAttributes.add(AttributeType.builder().name("email_verified").value("true").build());
+        userAttributes.add(AttributeType.builder().name("email_verified").value("true").build());
 
         AdminCreateUserRequest createUserRequest = AdminCreateUserRequest.builder()
                 .userPoolId(userPoolId)

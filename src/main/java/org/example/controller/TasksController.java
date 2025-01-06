@@ -47,6 +47,14 @@ public class TasksController {
 
     }
 
+
+    @PutMapping("/update/{taskId}")
+    @PreAuthorize("hasRole('APIADMINS')")
+    public ResponseEntity<Task> updateTask(@Valid @RequestBody TaskRequest task, @PathVariable("taskId") String taskId) {
+        return ResponseEntity.ok(taskService.updateTask(task, taskId));
+
+    }
+
     @PutMapping("/assign")
     @PreAuthorize("hasRole('APIADMINS')")
     public ResponseEntity<Task> assignTask(@Valid @RequestBody TaskUpdateAssignedToRequest request) {

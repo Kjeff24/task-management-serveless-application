@@ -19,4 +19,6 @@ public interface TaskService {
     Task getTaskById(String taskId);
 
     Task addUserComment(UserCommentRequest request);
+
+    Task updateTask(TaskRequest task,  String taskId);
 }

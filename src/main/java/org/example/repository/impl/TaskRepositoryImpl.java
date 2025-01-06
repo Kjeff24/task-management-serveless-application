@@ -1,15 +1,13 @@
 package org.example.repository.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.example.dto.TaskResponse;
-import org.example.dto.TaskUpdateAssignedToRequest;
-import org.example.dto.TaskUpdateStatusRequest;
-import org.example.dto.UserCommentRequest;
+import org.example.dto.*;
 import org.example.enums.TaskStatus;
 import org.example.exception.BadRequestException;
 import org.example.exception.NotFoundException;
 import org.example.model.Task;
 import org.example.repository.TaskRepository;
+import org.example.util.LocalDateTimeConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.*;
@@ -37,8 +35,6 @@ public class TaskRepositoryImpl implements TaskRepository {
 
     @Value("${app.aws.dynamodb.task.table}")
     private String taskTableName;
-
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm");
 
     private DynamoDbTable<Task> getTable() {
         return dynamoDbEnhancedClient.table(taskTableName, TASK_TABLE_SCHEMA);
@@ -89,19 +85,19 @@ public class TaskRepositoryImpl implements TaskRepository {
         Task task = findByTaskId(request.taskId()).orElseThrow(() -> new NotFoundException("Task not found"));
 
         if (TaskStatus.open.toString().equals(request.status()) &&
-                LocalDateTime.parse(task.getDeadline(), FORMATTER).isBefore(LocalDateTime.now()) &&
+                LocalDateTime.parse(task.getDeadline(), LocalDateTimeConverter.FORMATTER).isBefore(LocalDateTime.now()) &&
                 request.newDeadline() == null) {
             throw new BadRequestException("Deadline must be provided when setting the task status to open and the current deadline has passed.");
         }
 
         if (TaskStatus.completed.toString().equals(request.status())) {
-            task.setCompletedAt(LocalDateTime.now().format(FORMATTER));
+            task.setCompletedAt(LocalDateTime.now().format(LocalDateTimeConverter.FORMATTER));
         } else if (TaskStatus.open.toString().equals(request.status())) {
             task.setCompletedAt("");
 
         }
         if (request.newDeadline() != null) {
-            task.setDeadline(request.newDeadline().format(FORMATTER));
+            task.setDeadline(request.newDeadline().format(LocalDateTimeConverter.FORMATTER));
         }
 
         task.setStatus(request.status());
