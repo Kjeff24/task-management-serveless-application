@@ -84,20 +84,11 @@ public class TaskRepositoryImpl implements TaskRepository {
     public Task updateTaskStatus(TaskUpdateStatusRequest request) {
         Task task = findByTaskId(request.taskId()).orElseThrow(() -> new NotFoundException("Task not found"));
 
-        if (TaskStatus.open.toString().equals(request.status()) &&
-                LocalDateTime.parse(task.getDeadline(), LocalDateTimeConverter.FORMATTER).isBefore(LocalDateTime.now()) &&
-                request.newDeadline() == null) {
-            throw new BadRequestException("Deadline must be provided when setting the task status to open and the current deadline has passed.");
-        }
-
         if (TaskStatus.completed.toString().equals(request.status())) {
             task.setCompletedAt(LocalDateTime.now().format(LocalDateTimeConverter.FORMATTER));
         } else if (TaskStatus.open.toString().equals(request.status())) {
             task.setCompletedAt("");
 
-        }
-        if (request.newDeadline() != null) {
-            task.setDeadline(request.newDeadline().format(LocalDateTimeConverter.FORMATTER));
         }
 
         task.setStatus(request.status());
