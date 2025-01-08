@@ -22,7 +22,7 @@ public class UserManagement {
     private final UserManagementService userManagementService;
 
     @PostMapping
-    public ResponseEntity<MessageResponse> createUser(@Valid @RequestBody UserRequest userRequest) {
+    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody UserRequest userRequest) {
         return ResponseEntity.ok(userManagementService.createUser(userRequest));
     }
 

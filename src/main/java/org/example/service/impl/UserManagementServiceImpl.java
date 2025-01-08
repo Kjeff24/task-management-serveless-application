@@ -37,9 +37,10 @@ public class UserManagementServiceImpl implements UserManagementService {
     private String adminGroup;
 
 
-    public MessageResponse createUser(UserRequest userRequest) {
+    public UserResponse createUser(UserRequest userRequest) {
         List<AttributeType> userAttributes = new ArrayList<>();
         userAttributes.add(AttributeType.builder().name("email").value(userRequest.email()).build());
+        userAttributes.add(AttributeType.builder().name("name").value(userRequest.fullName()).build());
         userAttributes.add(AttributeType.builder().name("email_verified").value("true").build());
 
         AdminCreateUserRequest createUserRequest = AdminCreateUserRequest.builder()
@@ -49,14 +50,17 @@ public class UserManagementServiceImpl implements UserManagementService {
                 .temporaryPassword(PasswordGenerator.generatePassword(9))
                 .desiredDeliveryMediums(DeliveryMediumType.EMAIL)
                 .build();
-        cognitoIdentityProviderClient.adminCreateUser(createUserRequest);
+
+        AdminCreateUserResponse createUserResponse = cognitoIdentityProviderClient.adminCreateUser(createUserRequest);
+
+        UserResponse userResponse = userMapper.toUserResponse(createUserResponse.user());
 
         subscribeUserToSNSTopic(tasksAssignmentTopicArn, userRequest.email());
         subscribeUserToSNSTopic(tasksClosedTopicArn, userRequest.email());
         subscribeUserToSNSTopic(tasksReopenedTopicArn, userRequest.email());
         subscribeUserToSNSTopic(tasksDeadlineTopicArn, userRequest.email());
 
-        return MessageResponse.builder().message("User creation successful").build();
+        return userResponse;
     }
 
     public List<UserResponse> getAllUsers() {

@@ -8,7 +8,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
 import java.util.List;
 
 public interface UserManagementService {
-    MessageResponse createUser(UserRequest userRequest);
+    UserResponse createUser(UserRequest userRequest);
 
     List<UserResponse> getAllUsers();
 }
