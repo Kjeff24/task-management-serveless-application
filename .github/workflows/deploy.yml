@@ -41,5 +41,7 @@ jobs:
       - name: Deploy using SAM
         run: |
           sam build
-          sam deploy --no-confirm-changeset --stack-name task-manager \
+          sam deploy --no-confirm-changeset \
+            --stack-name task-manager \
+            --resolve-s3 \
             --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM
