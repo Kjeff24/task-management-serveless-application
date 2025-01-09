@@ -14,12 +14,6 @@ Parameters:
     Type: String
     Default: "http://localhost:4200"
     Description: The localhost of my frontend
-  AwsAccessKeyId:
-    Type: String
-    Description: The localhost of my frontend
-  AwsSecretKey:
-    Type: String
-    Description: The localhost of my frontend
   UserPoolAdminGroupName:
     Description: User pool group name for API administrators
     Type: String
@@ -84,8 +78,6 @@ Resources:
           TASKS_TABLE_NAME: !Ref DynamodbTasksTableName
           FRONTEND_DEV_URL: !Ref FrontendDevHost
           FRONTEND_PROD_URL: !Ref FrontendProdHost
-          ACCESS_KEY: !Ref AwsAccessKeyId
-          SECRET_KEY: !Ref AwsSecretKey
           TASKS_ASSIGNMENT_TOPIC_ARN: !Ref TasksAssignmentNotificationTopic
           TASKS_DEADLINE_TOPIC_ARN: !Ref TasksDeadlineNotificationTopic
           CLOSED_TASKS_TOPIC_ARN: !Ref ClosedTasksNotificationTopic
