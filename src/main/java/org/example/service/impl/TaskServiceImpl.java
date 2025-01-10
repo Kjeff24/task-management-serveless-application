@@ -25,28 +25,28 @@ public class TaskServiceImpl implements TaskService {
     private String tasksAssignmentTopicArn;
     @Value("${app.aws.sns.topics.tasks.reopened.arn}")
     private String reopenedTasksTopicArn;
-    @Value("${app.aws.sns.topics.tasks.closed.arn}")
-    private String closedTasksTopicArn;
+    @Value("${app.aws.sns.topics.tasks.complete.arn}")
+    private String taskCompleteTopicArn;
 
     public Task createTask(TaskRequest taskRequest, String adminEmail) {
         Task task = taskMapper.toTask(taskRequest, adminEmail);
         taskRepository.saveTask(task);
-        sqsService.sendToSQS(task, "TASK ASSIGNMENT NOTIFICATION", "New task created has been assigned to you", tasksAssignmentTopicArn);
+        sqsService.sendToSQS(task, "TASK ASSIGNMENT NOTIFICATION", task.getAssignedTo(), "New task created has been assigned to you", tasksAssignmentTopicArn);
         return task;
     }
 
     public Task assignTask(TaskUpdateAssignedToRequest request) {
         Task task = taskRepository.updateAssignedTo(request);
-        sqsService.sendToSQS(task, "TASK RE-ASSIGNMENT NOTIFICATION","Task has been re-assigned to you", tasksAssignmentTopicArn);
+        sqsService.sendToSQS(task, "TASK RE-ASSIGNMENT NOTIFICATION", task.getAssignedTo(), "Task has been re-assigned to you", tasksAssignmentTopicArn);
         return task;
     }
 
     public Task updateTaskStatus(TaskUpdateStatusRequest request) {
         Task task = taskRepository.updateTaskStatus(request);
         if (request.status().equals(TaskStatus.open.toString())) {
-            sqsService.sendToSQS(task, "TASK RE-OPEN NOTIFICATION", "Task has been re-opened, ensure you complete it", reopenedTasksTopicArn);
+            sqsService.sendToSQS(task, "TASK RE-OPEN NOTIFICATION", task.getAssignedTo(), "Task has been re-opened, ensure you complete it", reopenedTasksTopicArn);
         } else if (request.status().equals(TaskStatus.completed.toString())) {
-            sqsService.sendToSQS(task, "TASK COMPLETED NOTIFICATION", "Task has been successfully completed", closedTasksTopicArn);
+            sqsService.sendToSQS(task, "TASK COMPLETED NOTIFICATION", task.getCreatedBy(), "Task has been successfully completed", taskCompleteTopicArn);
         }
         return task;
     }
@@ -77,7 +77,7 @@ public class TaskServiceImpl implements TaskService {
 
         if(!taskToUpdate.getAssignedTo().equalsIgnoreCase(taskRequest.assignedTo())) {
             taskToUpdate.setAssignedTo(taskRequest.assignedTo());
-            sqsService.sendToSQS(taskToUpdate, "TASK RE-ASSIGNMENT NOTIFICATION","Task has been re-assigned to you", tasksAssignmentTopicArn);
+            sqsService.sendToSQS(taskToUpdate, "TASK RE-ASSIGNMENT NOTIFICATION", taskToUpdate.getAssignedTo(), "Task has been re-assigned to you", tasksAssignmentTopicArn);
         }
 
         taskRepository.saveTask(taskToUpdate);

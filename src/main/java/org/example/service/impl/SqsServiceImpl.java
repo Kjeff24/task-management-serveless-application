@@ -19,7 +19,7 @@ public class SqsServiceImpl implements SqsService {
     @Value("${app.aws.sqs.task.url}")
     private String taskQueueUrl;
 
-    public void sendToSQS(Task task, String subject, String message, String topicArn) {
+    public void sendToSQS(Task task, String subject, String to, String message, String topicArn) {
         String taskDetails = "Message: " + message +
                 "\nTask ID: " + task.getTaskId() +
                 "\nTask Description: " + task.getDescription() +
@@ -28,8 +28,7 @@ public class SqsServiceImpl implements SqsService {
                 "\nTask Status: " + task.getStatus();
 
         Map<String, MessageAttributeValue> attributes = new HashMap<>();
-        attributes.put("assignedTo", MessageAttributeValue.builder().dataType("String").stringValue(task.getAssignedTo()).build());
-        attributes.put("createdBy", MessageAttributeValue.builder().dataType("String").stringValue(task.getCreatedBy()).build());
+        attributes.put("sendTo", MessageAttributeValue.builder().dataType("String").stringValue(to).build());
         attributes.put("snsTopicArn", MessageAttributeValue.builder().dataType("String").stringValue(topicArn).build());
         attributes.put("subject", MessageAttributeValue.builder().dataType("String").stringValue(subject).build());
         attributes.put("workflowType", MessageAttributeValue.builder().dataType("String").stringValue("publishToSNS").build());
