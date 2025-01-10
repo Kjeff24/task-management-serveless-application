@@ -114,9 +114,8 @@ Resources:
               - sns:SetSubscriptionAttributes
             Resource:
               - !Ref TasksAssignmentNotificationTopic
-              - !Ref TasksDeadlineNotificationTopic
-              - !Ref ClosedTasksNotificationTopic
               - !Ref ReopenedTasksNotificationTopic
+              - !Ref TaskCompleteNotificationTopic
         - Statement:
             Effect: Allow
             Action:
@@ -193,10 +192,7 @@ Resources:
               - sns:GetSubscriptionAttributes
               - sns:SetSubscriptionAttributes
             Resource:
-              - !Ref TasksAssignmentNotificationTopic
-              - !Ref TasksDeadlineNotificationTopic
               - !Ref ClosedTasksNotificationTopic
-              - !Ref ReopenedTasksNotificationTopic
 
   # Lambda function to schedule events
   EventBridgeSchedulerLambda:
@@ -212,18 +208,24 @@ Resources:
         Variables:
           TASKS_TABLE_NAME: !Ref TasksTable
           TASKS_QUEUE_URL: !Ref SQSTaskQueue
+          TASKS_DEADLINE_TOPIC_ARN: !Ref TasksDeadlineNotificationTopic
       Policies:
-        - DynamoDBReadPolicy:
-            TableName: !Ref TasksTable
         - SQSSendMessagePolicy:
             QueueName: !Ref SQSTaskQueue
+        - Statement:
+            Effect: Allow
+            Action:
+              - dynamodb:UpdateItem
+              - dynamodb:Query
+            Resource:
+              - !Ref TasksTable
+              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamodbTasksTableName}/index/*
       Events:
         TaskDeadlineEvent:
           Type: Schedule
           Properties:
             Schedule: rate(1 day)
             Input: "{}"
-
 
   # Cognito User Pool
   UserPool:
@@ -353,6 +355,8 @@ Resources:
           AttributeType: S
         - AttributeName: hasSentDeadlineNotification
           AttributeType: N
+        - AttributeName: hasSentReminderNotification
+          AttributeType: N
         - AttributeName: deadline
           AttributeType: S
         - AttributeName: createdBy
@@ -371,12 +375,6 @@ Resources:
           KeySchema:
               - AttributeName: status
                 KeyType: HASH
-          Projection:
-            ProjectionType: ALL
-        - IndexName: HasSentDeadlineNotificationIndex
-          KeySchema:
-            - AttributeName: hasSentDeadlineNotification
-              KeyType: HASH
           Projection:
             ProjectionType: ALL
         - IndexName: DeadlineIndex
