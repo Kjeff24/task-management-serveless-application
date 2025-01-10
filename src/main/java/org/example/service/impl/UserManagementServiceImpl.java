@@ -1,7 +1,6 @@
 package org.example.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.example.dto.MessageResponse;
 import org.example.dto.UserRequest;
 import org.example.dto.UserResponse;
 import org.example.mapper.UserMapper;
@@ -11,8 +10,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.*;
-import software.amazon.awssdk.services.sns.SnsClient;
-import software.amazon.awssdk.services.sns.model.SubscribeRequest;
+import software.amazon.awssdk.services.sfn.SfnClient;
+import software.amazon.awssdk.services.sfn.model.StartExecutionRequest;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,19 +19,13 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class UserManagementServiceImpl implements UserManagementService {
-    private final SnsClient snsClient;
+    private final SfnClient stepFunctionsClient;
     private final CognitoIdentityProviderClient cognitoIdentityProviderClient;
     private final UserMapper userMapper;
     @Value("${app.aws.cognito.user.pool.id}")
     private String userPoolId;
-    @Value("${app.aws.sns.topics.tasks.assignment.arn}")
-    private String tasksAssignmentTopicArn;
-    @Value("${app.aws.sns.topics.tasks.reopened.arn}")
-    private String tasksReopenedTopicArn;
-    @Value("${app.aws.sns.topics.tasks.closed.arn}")
-    private String tasksClosedTopicArn;
-    @Value("${app.aws.sns.topics.tasks.deadline.arn}")
-    private String tasksDeadlineTopicArn;
+    @Value("${app.aws.sfn.arn}")
+    private String stateMachineArn;
     @Value("${app.aws.cognito.admin.group}")
     private String adminGroup;
 
@@ -55,10 +48,7 @@ public class UserManagementServiceImpl implements UserManagementService {
 
         UserResponse userResponse = userMapper.toUserResponse(createUserResponse.user());
 
-        subscribeUserToSNSTopic(tasksAssignmentTopicArn, userRequest.email());
-        subscribeUserToSNSTopic(tasksClosedTopicArn, userRequest.email());
-        subscribeUserToSNSTopic(tasksReopenedTopicArn, userRequest.email());
-        subscribeUserToSNSTopic(tasksDeadlineTopicArn, userRequest.email());
+        startStepFunction(userRequest.email());
 
         return userResponse;
     }
@@ -98,13 +88,13 @@ public class UserManagementServiceImpl implements UserManagementService {
     }
 
 
-    private void subscribeUserToSNSTopic(String topicArn, String email) {
-        SubscribeRequest request = SubscribeRequest.builder()
-                .topicArn(topicArn)
-                .protocol("email")
-                .endpoint(email)
+    private void startStepFunction(String userEmail) {
+        String input = String.format("{\"workflowType\":\"onboarding\",\"userEmail\":\"%s\"}", userEmail);
+        StartExecutionRequest executionRequest = StartExecutionRequest.builder()
+                .stateMachineArn(stateMachineArn)
+                .input(input)
                 .build();
 
-        snsClient.subscribe(request);
+        stepFunctionsClient.startExecution(executionRequest);
     }
 }
