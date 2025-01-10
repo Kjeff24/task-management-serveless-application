@@ -23,6 +23,7 @@ public class Task {
     private String deadline;
     private String completedAt;
     private int hasSentDeadlineNotification;
+    private int hasSentReminderNotification;
 
     @DynamoDbPartitionKey
     public String getTaskId() {
@@ -77,6 +78,12 @@ public class Task {
     @DynamoDbSecondaryPartitionKey(indexNames = "HasSentDeadlineNotificationIndex")
     public int getHasSentDeadlineNotification() {
         return hasSentDeadlineNotification;
+    }
+
+    @DynamoDbAttribute(value = "hasSentDeadlineNotification")
+    @DynamoDbSecondaryPartitionKey(indexNames = "HasSentDeadlineNotificationIndex")
+    public int getHasSentReminderNotification() {
+        return hasSentReminderNotification;
     }
 
 }

@@ -23,7 +23,6 @@ public class TaskMapper {
                 .assignedTo(taskRequest.assignedTo())
                 .status(TaskStatus.open.toString())
                 .deadline(formattedDeadline)
-                .hasSentDeadlineNotification(0)
                 .createdBy(adminId)
                 .build();
     }
