@@ -75,13 +75,11 @@ public class Task {
     }
 
     @DynamoDbAttribute(value = "hasSentDeadlineNotification")
-    @DynamoDbSecondaryPartitionKey(indexNames = "HasSentDeadlineNotificationIndex")
     public int getHasSentDeadlineNotification() {
         return hasSentDeadlineNotification;
     }
 
     @DynamoDbAttribute(value = "hasSentDeadlineNotification")
-    @DynamoDbSecondaryPartitionKey(indexNames = "HasSentDeadlineNotificationIndex")
     public int getHasSentReminderNotification() {
         return hasSentReminderNotification;
     }
