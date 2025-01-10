@@ -76,8 +76,7 @@ Resources:
           FRONTEND_DEV_URL: !Ref FrontendDevHost
           FRONTEND_PROD_URL: !Ref FrontendProdHost
           TASKS_ASSIGNMENT_TOPIC_ARN: !Ref TasksAssignmentNotificationTopic
-          TASKS_DEADLINE_TOPIC_ARN: !Ref TasksDeadlineNotificationTopic
-          CLOSED_TASKS_TOPIC_ARN: !Ref ClosedTasksNotificationTopic
+          TASKS_COMPLETE_TOPIC_ARN: !Ref TaskCompleteNotificationTopic
           REOPENED_TASKS_TOPIC_ARN: !Ref ReopenedTasksNotificationTopic
           COGNITO_ADMIN_GROUP: !Ref UserPoolAdminGroupName
           COGNITO_USER_POOL_ID: !Ref UserPool
@@ -331,6 +330,11 @@ Resources:
     Type: AWS::SNS::Topic
     Properties:
       TopicName: ReopenedTasksNotificationTopic
+
+  TaskCompleteNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: TaskCompleteNotificationTopic
 
   # SQS Queue for Task Notifications
   SQSTaskQueue:

@@ -46,14 +46,14 @@ public class SendDeadlineNotificationLambda implements RequestHandler<Map<String
         Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
 
         if (userEmail != null && !userEmail.isEmpty()) {
-            messageAttributes.put("assignedTo", MessageAttributeValue.builder()
+            messageAttributes.put("userEmail", MessageAttributeValue.builder()
                     .dataType("String")
                     .stringValue(userEmail)
                     .build());
         }
 
         if (adminEmail != null && !adminEmail.isEmpty()) {
-            messageAttributes.put("createdBy", MessageAttributeValue.builder()
+            messageAttributes.put("userEmail", MessageAttributeValue.builder()
                     .dataType("String")
                     .stringValue(adminEmail)
                     .build());
@@ -86,50 +86,29 @@ public class SendDeadlineNotificationLambda implements RequestHandler<Map<String
                 continue;
             }
 
-            GetSubscriptionAttributesResponse attributesResponse = snsClient.getSubscriptionAttributes(
+            String endpoint = snsClient.getSubscriptionAttributes(
                     GetSubscriptionAttributesRequest.builder()
                             .subscriptionArn(subscriptionArn)
                             .build()
-            );
+            ).attributes().get("Endpoint");
 
-            Map<String, String> attributes = attributesResponse.attributes();
-            String endpoint = attributes.get("Endpoint");
+            String filterPolicy;
 
             if (assignedTo.equals(endpoint)) {
-                String updatedFilterPolicy = String.format(String.format("{\"assignedTo\": [\"%s\"]}", assignedTo));
-
-                snsClient.setSubscriptionAttributes(
-                        SetSubscriptionAttributesRequest.builder()
-                                .subscriptionArn(subscriptionArn)
-                                .attributeName("FilterPolicy")
-                                .attributeValue(updatedFilterPolicy)
-                                .build()
-                );
+                filterPolicy = String.format("{\"userEmail\": [\"%s\"]}", assignedTo);
+            } else if (createdBy.equals(endpoint)) {
+                filterPolicy = String.format("{\"userEmail\": [\"%s\"]}", createdBy);
+            } else {
+                filterPolicy = "{\"userEmail\": [\"none\"]}";
             }
 
-            if (createdBy.equals(endpoint)) {
-                String updatedFilterPolicy = String.format(String.format("{\"createdBy\": [\"%s\"]}", createdBy));
-
-
-                snsClient.setSubscriptionAttributes(
-                        SetSubscriptionAttributesRequest.builder()
-                                .subscriptionArn(subscriptionArn)
-                                .attributeName("FilterPolicy")
-                                .attributeValue(updatedFilterPolicy)
-                                .build()
-                );
-            }
-
-            if (!assignedTo.equals(endpoint) && !createdBy.equals(endpoint)) {
-                String defaultFilterPolicy = "{\"assignedTo\": [\"none\"]}";
-                snsClient.setSubscriptionAttributes(
-                        SetSubscriptionAttributesRequest.builder()
-                                .subscriptionArn(subscriptionArn)
-                                .attributeName("FilterPolicy")
-                                .attributeValue(defaultFilterPolicy)
-                                .build()
-                );
-            }
+            snsClient.setSubscriptionAttributes(
+                    SetSubscriptionAttributesRequest.builder()
+                            .subscriptionArn(subscriptionArn)
+                            .attributeName("FilterPolicy")
+                            .attributeValue(filterPolicy)
+                            .build()
+            );
 
         }
     }
