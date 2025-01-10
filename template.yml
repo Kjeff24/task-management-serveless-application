@@ -25,10 +25,10 @@ Parameters:
 
 Resources:
   # Lambda Function for API Gateway
-  SpringBootServelessFunction:
+  SpringBootServerlessFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-SpringBootServelessFunction
+      FunctionName: !Sub ${AWS::StackName}-SpringBootServerlessFunction
       Handler: org.example.StreamLambdaHandler::handleRequest
       Runtime: java21
       CodeUri: .
@@ -66,12 +66,9 @@ Resources:
         - Statement:
             Effect: Allow
             Action:
-              - sns:Subscribe
+              - states:StartExecution
             Resource:
-              - !Ref TasksAssignmentNotificationTopic
-              - !Ref TasksDeadlineNotificationTopic
-              - !Ref ClosedTasksNotificationTopic
-              - !Ref ReopenedTasksNotificationTopic
+              - !GetAtt StepFunctionStateMachine.Arn
       Timeout: 30
       Environment:
         Variables:
@@ -85,6 +82,7 @@ Resources:
           COGNITO_ADMIN_GROUP: !Ref UserPoolAdminGroupName
           COGNITO_USER_POOL_ID: !Ref UserPool
           TASKS_QUEUE_URL: !Ref SQSTaskQueue
+          STATE_MACHINE_ARN: !Ref StepFunctionStateMachine
       Events:
         ProxyResource:
           Type: Api
@@ -161,34 +159,6 @@ Resources:
               - !Ref ClosedTasksNotificationTopic
               - !Ref ReopenedTasksNotificationTopic
 
-  # Lambda Function for CognitoPostConfirmationLambda to use state machine
-  CognitoPostConfirmationLambda:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-CognitoPostConfirmationLambda
-      Handler: org.example.CognitoPostConfirmationLambda::handleRequest
-      Runtime: java21
-      CodeUri: .
-      MemorySize: 512
-      Timeout: 30
-      Policies:
-        - AWSLambdaBasicExecutionRole
-        - Statement:
-            Effect: Allow
-            Action:
-              - states:StartExecution
-            Resource:
-              - !GetAtt StepFunctionStateMachine.Arn
-      Environment:
-        Variables:
-          STATE_MACHINE_ARN: !Ref StepFunctionStateMachine
-      Events:
-        CognitoPostConfirmationEvent:
-          Type: Cognito
-          Properties:
-            UserPool: !Ref UserPool
-            Trigger: PostConfirmation
-
   # Lambda Function for SQS Notification Processing
   UpdateTaskStatusLambda:
     Type: AWS::Serverless::Function
@@ -264,6 +234,8 @@ Resources:
     Type: AWS::Cognito::UserPool
     Properties:
       UserPoolName: !Sub ${AWS::StackName}-TaskManagementUserPool
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: true
       AutoVerifiedAttributes:
         - email
       UsernameAttributes:

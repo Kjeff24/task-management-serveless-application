@@ -7,6 +7,7 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.sfn.SfnClient;
 import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
 
@@ -50,5 +51,9 @@ public class AwsConfig {
                 .build();
     }
 
-
+    @Bean
+    public SfnClient stepFunctionClient() {
+        return SfnClient.builder()
+                .build();
+    }
 }
