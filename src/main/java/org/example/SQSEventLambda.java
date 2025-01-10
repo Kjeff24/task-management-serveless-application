@@ -76,33 +76,25 @@ public class SQSEventLambda implements RequestHandler<SQSEvent, Void> {
     private void handlePublishToSNS(SQSEvent.SQSMessage message, Context context) {
         context.getLogger().log("Processing PublishToSNS event: " + message);
 
-        String assignedTo = message.getMessageAttributes().get("assignedTo").getStringValue();
-        String createdBy = message.getMessageAttributes().get("createdBy").getStringValue();
+        String userEmail = message.getMessageAttributes().get("sendTo").getStringValue();
         String snsTopicArn = message.getMessageAttributes().get("snsTopicArn").getStringValue();
         String subject = message.getMessageAttributes().get("subject").getStringValue();
         String messageBody = message.getBody();
 
-        sendSNSNotification(assignedTo, createdBy, snsTopicArn, messageBody, subject);
+        sendSNSNotification(userEmail, snsTopicArn, messageBody, subject);
     }
 
-    private void sendSNSNotification(String assignedTo, String createdBy, String snsTopicArn, String message, String subject) {
+    private void sendSNSNotification(String userEmail, String snsTopicArn, String message, String subject) {
         Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
 
-        if (assignedTo != null && !assignedTo.isEmpty()) {
-            messageAttributes.put("assignedTo", MessageAttributeValue.builder()
+        if (userEmail != null && !userEmail.isEmpty()) {
+            messageAttributes.put("userEmail", MessageAttributeValue.builder()
                     .dataType("String")
-                    .stringValue(assignedTo)
+                    .stringValue(userEmail)
                     .build());
         }
 
-        if (createdBy != null && !createdBy.isEmpty()) {
-            messageAttributes.put("createdBy", MessageAttributeValue.builder()
-                    .dataType("String")
-                    .stringValue(createdBy)
-                    .build());
-        }
-
-        addSubscriptionFilter(snsTopicArn, assignedTo, createdBy);
+        addSubscriptionFilter(snsTopicArn, userEmail);
 
         PublishRequest publishRequest = PublishRequest.builder()
                 .subject(subject)
@@ -114,7 +106,7 @@ public class SQSEventLambda implements RequestHandler<SQSEvent, Void> {
         snsClient.publish(publishRequest);
     }
 
-    private void addSubscriptionFilter(String snsTopicArn, String assignedTo, String createdBy) {
+    private void addSubscriptionFilter(String snsTopicArn, String userEmail) {
         ListSubscriptionsByTopicResponse subscriptionsResponse = snsClient.listSubscriptionsByTopic(
                 ListSubscriptionsByTopicRequest.builder()
                         .topicArn(snsTopicArn)
@@ -128,50 +120,27 @@ public class SQSEventLambda implements RequestHandler<SQSEvent, Void> {
                 continue;
             }
 
-            GetSubscriptionAttributesResponse attributesResponse = snsClient.getSubscriptionAttributes(
+            String endpoint = snsClient.getSubscriptionAttributes(
                     GetSubscriptionAttributesRequest.builder()
                             .subscriptionArn(subscriptionArn)
                             .build()
+            ).attributes().get("Endpoint");
+
+            String filterPolicy;
+
+            if (userEmail.equals(endpoint)) {
+                filterPolicy = String.format(String.format("{\"userEmail\": [\"%s\"]}", userEmail));
+            } else {
+                filterPolicy = "{\"userEmail\": [\"none\"]}";
+            }
+
+            snsClient.setSubscriptionAttributes(
+                    SetSubscriptionAttributesRequest.builder()
+                            .subscriptionArn(subscriptionArn)
+                            .attributeName("FilterPolicy")
+                            .attributeValue(filterPolicy)
+                            .build()
             );
-
-            Map<String, String> attributes = attributesResponse.attributes();
-            String endpoint = attributes.get("Endpoint");
-
-            if (assignedTo.equals(endpoint)) {
-                String updatedFilterPolicy = String.format(String.format("{\"assignedTo\": [\"%s\"]}", assignedTo));
-
-                snsClient.setSubscriptionAttributes(
-                        SetSubscriptionAttributesRequest.builder()
-                                .subscriptionArn(subscriptionArn)
-                                .attributeName("FilterPolicy")
-                                .attributeValue(updatedFilterPolicy)
-                                .build()
-                );
-            }
-
-            if (createdBy.equals(endpoint)) {
-                String updatedFilterPolicy = String.format(String.format("{\"createdBy\": [\"%s\"]}", createdBy));
-
-
-                snsClient.setSubscriptionAttributes(
-                        SetSubscriptionAttributesRequest.builder()
-                                .subscriptionArn(subscriptionArn)
-                                .attributeName("FilterPolicy")
-                                .attributeValue(updatedFilterPolicy)
-                                .build()
-                );
-            }
-
-            if (!assignedTo.equals(endpoint) && !createdBy.equals(endpoint)) {
-                String defaultFilterPolicy = "{\"assignedTo\": [\"none\"]}";
-                snsClient.setSubscriptionAttributes(
-                        SetSubscriptionAttributesRequest.builder()
-                                .subscriptionArn(subscriptionArn)
-                                .attributeName("FilterPolicy")
-                                .attributeValue(defaultFilterPolicy)
-                                .build()
-                );
-            }
 
         }
     }

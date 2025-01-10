@@ -39,9 +39,6 @@ Resources:
             Effect: Allow
             Action:
               - sqs:SendMessage
-              - sqs:ReceiveMessage
-              - sqs:DeleteMessage
-              - sqs:GetQueueAttributes
             Resource: !GetAtt SQSTaskQueue.Arn
         - Statement:
             Effect: Allow
@@ -76,8 +73,7 @@ Resources:
           FRONTEND_DEV_URL: !Ref FrontendDevHost
           FRONTEND_PROD_URL: !Ref FrontendProdHost
           TASKS_ASSIGNMENT_TOPIC_ARN: !Ref TasksAssignmentNotificationTopic
-          TASKS_DEADLINE_TOPIC_ARN: !Ref TasksDeadlineNotificationTopic
-          CLOSED_TASKS_TOPIC_ARN: !Ref ClosedTasksNotificationTopic
+          TASKS_COMPLETE_TOPIC_ARN: !Ref TaskCompleteNotificationTopic
           REOPENED_TASKS_TOPIC_ARN: !Ref ReopenedTasksNotificationTopic
           COGNITO_ADMIN_GROUP: !Ref UserPoolAdminGroupName
           COGNITO_USER_POOL_ID: !Ref UserPool
@@ -118,9 +114,8 @@ Resources:
               - sns:SetSubscriptionAttributes
             Resource:
               - !Ref TasksAssignmentNotificationTopic
-              - !Ref TasksDeadlineNotificationTopic
-              - !Ref ClosedTasksNotificationTopic
               - !Ref ReopenedTasksNotificationTopic
+              - !Ref TaskCompleteNotificationTopic
         - Statement:
             Effect: Allow
             Action:
@@ -197,10 +192,7 @@ Resources:
               - sns:GetSubscriptionAttributes
               - sns:SetSubscriptionAttributes
             Resource:
-              - !Ref TasksAssignmentNotificationTopic
-              - !Ref TasksDeadlineNotificationTopic
               - !Ref ClosedTasksNotificationTopic
-              - !Ref ReopenedTasksNotificationTopic
 
   # Lambda function to schedule events
   EventBridgeSchedulerLambda:
@@ -216,18 +208,24 @@ Resources:
         Variables:
           TASKS_TABLE_NAME: !Ref TasksTable
           TASKS_QUEUE_URL: !Ref SQSTaskQueue
+          TASKS_DEADLINE_TOPIC_ARN: !Ref TasksDeadlineNotificationTopic
       Policies:
-        - DynamoDBReadPolicy:
-            TableName: !Ref TasksTable
         - SQSSendMessagePolicy:
             QueueName: !Ref SQSTaskQueue
+        - Statement:
+            Effect: Allow
+            Action:
+              - dynamodb:UpdateItem
+              - dynamodb:Query
+            Resource:
+              - !Ref TasksTable
+              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamodbTasksTableName}/index/*
       Events:
         TaskDeadlineEvent:
           Type: Schedule
           Properties:
             Schedule: rate(1 day)
             Input: "{}"
-
 
   # Cognito User Pool
   UserPool:
@@ -332,6 +330,11 @@ Resources:
     Properties:
       TopicName: ReopenedTasksNotificationTopic
 
+  TaskCompleteNotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: TaskCompleteNotificationTopic
+
   # SQS Queue for Task Notifications
   SQSTaskQueue:
     Type: AWS::SQS::Queue
@@ -352,6 +355,8 @@ Resources:
           AttributeType: S
         - AttributeName: hasSentDeadlineNotification
           AttributeType: N
+        - AttributeName: hasSentReminderNotification
+          AttributeType: N
         - AttributeName: deadline
           AttributeType: S
         - AttributeName: createdBy
@@ -370,12 +375,6 @@ Resources:
           KeySchema:
               - AttributeName: status
                 KeyType: HASH
-          Projection:
-            ProjectionType: ALL
-        - IndexName: HasSentDeadlineNotificationIndex
-          KeySchema:
-            - AttributeName: hasSentDeadlineNotification
-              KeyType: HASH
           Projection:
             ProjectionType: ALL
         - IndexName: DeadlineIndex
