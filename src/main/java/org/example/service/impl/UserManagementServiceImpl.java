@@ -28,6 +28,9 @@ public class UserManagementServiceImpl implements UserManagementService {
     private String stateMachineArn;
     @Value("${app.aws.cognito.admin.group}")
     private String adminGroup;
+    @Value("${app.aws.cognito.team.group}")
+    private String teamGroup;
+
 
 
     public UserResponse createUser(UserRequest userRequest) {
@@ -45,6 +48,14 @@ public class UserManagementServiceImpl implements UserManagementService {
                 .build();
 
         AdminCreateUserResponse createUserResponse = cognitoIdentityProviderClient.adminCreateUser(createUserRequest);
+
+        AdminAddUserToGroupRequest addUserToGroupRequest = AdminAddUserToGroupRequest.builder()
+                .userPoolId(userPoolId)
+                .username(userRequest.email())
+                .groupName(teamGroup)
+                .build();
+
+        cognitoIdentityProviderClient.adminAddUserToGroup(addUserToGroupRequest);
 
         UserResponse userResponse = userMapper.toUserResponse(createUserResponse.user());
 

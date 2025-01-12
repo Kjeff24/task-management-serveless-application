@@ -33,14 +33,14 @@ public class TasksController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('APIADMINS')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TaskResponse> getAllTasks() {
 
         return ResponseEntity.ok(taskService.getAllTasks());
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('APIADMINS')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Task> createTask(@Valid @RequestBody TaskRequest task, @AuthenticationPrincipal Jwt jwt) {
         String adminEmail = jwt.getClaimAsString("email");
         return new ResponseEntity<>(taskService.createTask(task, adminEmail), HttpStatus.CREATED);
@@ -49,18 +49,19 @@ public class TasksController {
 
 
     @PutMapping("/update/{taskId}")
-    @PreAuthorize("hasRole('APIADMINS')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Task> updateTask(@Valid @RequestBody TaskRequest task, @PathVariable("taskId") String taskId) {
         return ResponseEntity.ok(taskService.updateTask(task, taskId));
 
     }
 
     @PutMapping("/assign")
-    @PreAuthorize("hasRole('APIADMINS')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Task> assignTask(@Valid @RequestBody TaskUpdateAssignedToRequest request) {
         return ResponseEntity.ok(taskService.assignTask(request));
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     @PutMapping("/status")
     public ResponseEntity<Task> updateTaskStatus(@Valid @RequestBody TaskUpdateStatusRequest request, @AuthenticationPrincipal Jwt jwt) {
 
@@ -74,11 +75,14 @@ public class TasksController {
         }
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/user/{userEmail}")
     public ResponseEntity<TaskResponse> getTasksForUser(@PathVariable("userEmail") String userEmail) {
         return ResponseEntity.ok(taskService.getTasksForUser(userEmail));
     }
 
+
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/user")
     public ResponseEntity<TaskResponse> findAssignedTasksByUser(@AuthenticationPrincipal Jwt jwt) {
         String userEmail = jwt.getClaimAsString("email");
@@ -90,6 +94,7 @@ public class TasksController {
         return ResponseEntity.ok(taskService.getTaskById(taskId));
     }
 
+    @PreAuthorize("hasRole('USER')")
     @PutMapping("/comment")
     public ResponseEntity<Task> addUserComment(@Valid @RequestBody UserCommentRequest request) {
         return ResponseEntity.ok(taskService.addUserComment(request));

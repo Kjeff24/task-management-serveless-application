@@ -17,7 +17,11 @@ Parameters:
   UserPoolAdminGroupName:
     Description: User pool group name for API administrators
     Type: String
-    Default: apiAdmins
+    Default: ADMIN
+  UserPoolTeamGroupName:
+    Description: User pool group name for API normal users
+    Type: String
+    Default: USER
   DynamodbTasksTableName:
     Description: Dynamodb table for task
     Type: String
@@ -76,6 +80,7 @@ Resources:
           TASKS_COMPLETE_TOPIC_ARN: !Ref TaskCompleteNotificationTopic
           REOPENED_TASKS_TOPIC_ARN: !Ref ReopenedTasksNotificationTopic
           COGNITO_ADMIN_GROUP: !Ref UserPoolAdminGroupName
+          COGNITO_TEAM_MEMBERS_GROUP: !Ref UserPoolTeamGroupName
           COGNITO_USER_POOL_ID: !Ref UserPool
           TASKS_QUEUE_URL: !Ref SQSTaskQueue
           STATE_MACHINE_ARN: !Ref StepFunctionStateMachine
@@ -300,12 +305,21 @@ Resources:
       Domain: !Sub ${AWS::StackName}-domain
       UserPoolId: !Ref UserPool
 
-  # Cognito User Group
-  ApiAdministratorsUserPoolGroup:
+  # Cognito ADMIN Group
+  AdministratorsUserPoolGroup:
     Type: AWS::Cognito::UserPoolGroup
     Properties:
       Description: User group for API Administrators
       GroupName: !Ref UserPoolAdminGroupName
+      Precedence: 0
+      UserPoolId: !Ref UserPool
+
+ # Cognito TEAM MEMBERS Group
+  TeamMembersUserPoolGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      Description: User group for team memmbers
+      GroupName: !Ref UserPoolTeamGroupName
       Precedence: 0
       UserPoolId: !Ref UserPool
 
@@ -585,6 +599,10 @@ Outputs:
   UserPoolAdminGroupName:
     Description: User Pool group name for API administrators
     Value: !Ref UserPoolAdminGroupName
+
+  UserPoolTeamMembersGroupName:
+    Description: User Pool group name for team members
+    Value: !Ref UserPoolTeamGroupName
 
   TasksTable:
     Description: Dynamodb task table
