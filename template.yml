@@ -367,10 +367,6 @@ Resources:
           AttributeType: S
         - AttributeName: status
           AttributeType: S
-        - AttributeName: hasSentDeadlineNotification
-          AttributeType: N
-        - AttributeName: hasSentReminderNotification
-          AttributeType: N
         - AttributeName: deadline
           AttributeType: S
         - AttributeName: createdBy
