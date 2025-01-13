@@ -239,6 +239,14 @@ Resources:
       UserPoolName: !Sub ${AWS::StackName}-TaskManagementUserPool
       AdminCreateUserConfig:
         AllowAdminCreateUserOnly: true
+        InviteMessageTemplate:
+          EmailMessage: !Sub |
+            Hello {username},
+            
+            Welcome to our Task Management System! Your temporary password is {####}. Please use it to sign in and reset your password.
+            
+            Click here to sign in: https://${UserPoolDomain}.auth.${AWS::Region}.amazoncognito.com/login?client_id=${UserPoolClient}&response_type=code&redirect_uri=${FrontendProdHost}
+          EmailSubject: "Welcome to Task Management System"
       AutoVerifiedAttributes:
         - email
       UsernameAttributes:
