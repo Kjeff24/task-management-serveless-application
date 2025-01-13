@@ -42,8 +42,9 @@ public class EventBridgeSchedulerLambda implements RequestHandler<Object, Void> 
         QueryRequest queryRequest = QueryRequest.builder()
                 .tableName(tasksTable)
                 .indexName("StatusAndDeadlineIndex")
-                .keyConditionExpression("status = :status")
+                .keyConditionExpression("#status = :status")
                 .filterExpression("deadline <= :currentTime")
+                .expressionAttributeNames(Map.of("#status", "status"))
                 .expressionAttributeValues(Map.of(
                         ":status", AttributeValue.builder().s("open").build(),
                         ":currentTime", AttributeValue.builder().s(currentTime).build()
