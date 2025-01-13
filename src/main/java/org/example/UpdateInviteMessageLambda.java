@@ -14,8 +14,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class UpdateInviteMessageLambda implements RequestHandler<CloudFormationCustomResourceEvent, Void> {
-    private final CognitoIdentityProviderClient cognitoClient = CognitoIdentityProviderClient.create();
+    private final CognitoIdentityProviderClient cognitoIdentityProviderClient;
 
+    public UpdateInviteMessageLambda() {
+        cognitoIdentityProviderClient = CognitoIdentityProviderClient.create();
+    }
     @Override
     public Void handleRequest(CloudFormationCustomResourceEvent event, Context context) {
         String responseUrl = event.getResponseUrl();
@@ -42,7 +45,7 @@ public class UpdateInviteMessageLambda implements RequestHandler<CloudFormationC
                     .emailSubject("Welcome to Task Management System")
                     .build();
 
-            cognitoClient.updateUserPool(UpdateUserPoolRequest.builder()
+            cognitoIdentityProviderClient.updateUserPool(UpdateUserPoolRequest.builder()
                     .userPoolId(userPoolId)
                     .adminCreateUserConfig(AdminCreateUserConfigType.builder()
                             .allowAdminCreateUserOnly(true)
