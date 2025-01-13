@@ -603,11 +603,6 @@ Outputs:
     Description: AWS CLI command for Amazon Cognito User Pool information
     Value: !Sub "aws cognito-idp describe-user-pool-client --user-pool-id ${UserPool} --client-id ${UserPoolClient}"
 
-  UpdateInviteMessageTemplate:
-    Description: Update InviteMessageTemplate to include login url
-    Value: !Sub "aws cognito-idp update-user-pool --user-pool-id ${UserPool} --admin-create-user-config 'AllowAdminCreateUserOnly=true,InviteMessageTemplate={EmailMessage=\"Hello {username}, Welcome to our Task Management System! Your temporary password is {####}. Please use it to sign in and reset your password. Click here to sign in: https://${UserPoolDomainName}.auth.${AWS::Region}.amazoncognito.com/login?client_id=${UserPoolClientId}&response_type=code&redirect_uri=${FrontendProdHost}\",EmailSubject=\"Welcome to Task Management System\"}'"
-
-
   UserPoolAdminGroupName:
     Description: User Pool group name for API administrators
     Value: !Ref UserPoolAdminGroupName
