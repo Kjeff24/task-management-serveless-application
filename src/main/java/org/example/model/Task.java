@@ -79,7 +79,7 @@ public class Task {
         return hasSentDeadlineNotification;
     }
 
-    @DynamoDbAttribute(value = "hasSentDeadlineNotification")
+    @DynamoDbAttribute(value = "hasSentReminderNotification")
     public int getHasSentReminderNotification() {
         return hasSentReminderNotification;
     }
