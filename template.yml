@@ -223,7 +223,7 @@ Resources:
               - dynamodb:UpdateItem
               - dynamodb:Query
             Resource:
-              - !Ref TasksTable
+              - !GetAtt TasksTable.Arn
               - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamodbTasksTableName}/index/*
       Events:
         TaskDeadlineEvent:
