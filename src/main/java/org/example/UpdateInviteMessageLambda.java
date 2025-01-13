@@ -1,15 +1,21 @@
 package org.example;
 
 import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.CloudFormationCustomResourceEvent;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.hc.client5.http.classic.methods.HttpPut;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminCreateUserConfigType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.MessageTemplateType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UpdateUserPoolRequest;
 
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,6 +25,7 @@ public class UpdateInviteMessageLambda implements RequestHandler<CloudFormationC
     public UpdateInviteMessageLambda() {
         cognitoIdentityProviderClient = CognitoIdentityProviderClient.create();
     }
+
     @Override
     public Void handleRequest(CloudFormationCustomResourceEvent event, Context context) {
         String responseUrl = event.getResponseUrl();
@@ -66,27 +73,37 @@ public class UpdateInviteMessageLambda implements RequestHandler<CloudFormationC
     }
 
     private void sendResponse(String url, CloudFormationCustomResourceEvent event, Context context, String status, Map<String, Object> data) {
-        try {
-            HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
-            connection.setDoOutput(true);
-            connection.setRequestMethod("PUT");
-            connection.setRequestProperty("Content-Type", "application/json");
+        LambdaLogger logger = context.getLogger();
+        ObjectMapper objectMapper = new ObjectMapper();
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
 
-            String responseBody = String.format("""
-                    {
-                        "Status": "%s",
-                        "Reason": "Check logs for details",
-                        "PhysicalResourceId": "%s",
-                        "StackId": "%s",
-                        "RequestId": "%s",
-                        "LogicalResourceId": "%s",
-                        "Data": %s
-                    }""", status, event.getLogicalResourceId(), event.getStackId(), event.getRequestId(), event.getLogicalResourceId(), data);
+            Map<String, Object> responseBody = Map.of(
+                    "Status", status,
+                    "Reason", "See the details in CloudWatch Log Stream: " + context.getLogStreamName(),
+                    "PhysicalResourceId", event.getPhysicalResourceId() != null ? event.getPhysicalResourceId() : context.getLogStreamName(),
+                    "StackId", event.getStackId(),
+                    "RequestId", event.getRequestId(),
+                    "LogicalResourceId", event.getLogicalResourceId(),
+                    "Data", data
+            );
 
-            connection.getOutputStream().write(responseBody.getBytes());
-            context.getLogger().log("Response sent: " + responseBody);
-        } catch (Exception e) {
-            context.getLogger().log("Failed to send response: " + e.getMessage());
+            try {
+                StringEntity entity = new StringEntity(objectMapper.writeValueAsString(responseBody));
+                HttpPut request = new HttpPut(url);
+                request.setEntity(entity);
+                request.setHeader("Content-Type", "application/json");
+
+                httpClient.execute(request, response -> {
+                    EntityUtils.consume(response.getEntity());
+                    logger.log("Response sent to CloudFormation successfully.");
+                    return null;
+                });
+                logger.log("Response sent to CloudFormation successfully.");
+            } catch (IOException e) {
+                logger.log("Failed to send response to CloudFormation: " + e.getMessage());
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 }

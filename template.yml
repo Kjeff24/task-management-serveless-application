@@ -256,6 +256,7 @@ Resources:
     Type: Custom::UpdateInviteMessageTemplate
     Properties:
       ServiceToken: !GetAtt UpdateInviteMessageLambda.Arn
+      ServiceTimeout: 30
       UserPoolId: !Ref UserPool
       UserPoolDomain: !Ref UserPoolDomain
       UserPoolClient: !Ref UserPoolClient

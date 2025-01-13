@@ -39,9 +39,16 @@ jobs:
           aws-region: ${{secrets.AWS_REGION}}
 
       - name: Deploy using SAM
+        env:
+          FRONT_END_URI: ${{ secrets.FRONT_END_URI }}
         run: |
           sam build
+          PARAM_OVERRIDES=""
+          if [ -n "$FRONT_END_URI" ]; then
+          PARAM_OVERRIDES="--parameter-overrides FrontendProdHost=$FRONT_END_URI"
+          fi
           sam deploy --no-confirm-changeset \
-            --stack-name task-manager \
-            --resolve-s3 \
-            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM
+          --stack-name task-manager \
+          --resolve-s3 \
+          --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+          $PARAM_OVERRIDES
