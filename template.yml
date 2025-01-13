@@ -239,14 +239,6 @@ Resources:
       UserPoolName: !Sub ${AWS::StackName}-TaskManagementUserPool
       AdminCreateUserConfig:
         AllowAdminCreateUserOnly: true
-        InviteMessageTemplate:
-          EmailMessage: !Sub |
-            Hello {username},
-            
-            Welcome to our Task Management System! Your temporary password is {####}. Please use it to sign in and reset your password.
-            
-            Click here to sign in: https://${UserPoolDomain}.auth.${AWS::Region}.amazoncognito.com/login?client_id=${UserPoolClient}&response_type=code&redirect_uri=${FrontendProdHost}
-          EmailSubject: "Welcome to Task Management System"
       AutoVerifiedAttributes:
         - email
       UsernameAttributes:
@@ -312,6 +304,17 @@ Resources:
     Properties:
       Domain: !Sub ${AWS::StackName}-domain
       UserPoolId: !Ref UserPool
+
+  # Update InviteMessageTemplate
+  UpdateInviteMessageTemplate:
+    Type: Custom::UpdateInviteMessageTemplate
+    Properties:
+      ServiceToken: arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:UpdateInviteMessageLambda
+      UserPoolId: !Ref UserPool
+      UserPoolDomain: !Ref UserPoolDomain
+      UserPoolClient: !Ref UserPoolClient
+      FrontendProdHost: !Ref FrontendProdHost
+      Region: !Ref AWS::Region
 
   # Cognito ADMIN Group
   AdministratorsUserPoolGroup:
@@ -599,6 +602,11 @@ Outputs:
   CognitoUserPoolClientInfo:
     Description: AWS CLI command for Amazon Cognito User Pool information
     Value: !Sub "aws cognito-idp describe-user-pool-client --user-pool-id ${UserPool} --client-id ${UserPoolClient}"
+
+  UpdateInviteMessageTemplate:
+    Description: Update InviteMessageTemplate to include login url
+    Value: !Sub "aws cognito-idp update-user-pool --user-pool-id ${UserPool} --admin-create-user-config 'AllowAdminCreateUserOnly=true,InviteMessageTemplate={EmailMessage=\"Hello {username}, Welcome to our Task Management System! Your temporary password is {####}. Please use it to sign in and reset your password. Click here to sign in: https://${UserPoolDomainName}.auth.${AWS::Region}.amazoncognito.com/login?client_id=${UserPoolClientId}&response_type=code&redirect_uri=${FrontendProdHost}\",EmailSubject=\"Welcome to Task Management System\"}'"
+
 
   UserPoolAdminGroupName:
     Description: User Pool group name for API administrators
