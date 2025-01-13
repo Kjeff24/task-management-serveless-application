@@ -250,6 +250,18 @@ Resources:
               - cognito-idp:UpdateUserPool
             Resource: !GetAtt UserPool.Arn
 
+
+  # Update InviteMessageTemplate after resource creation
+  UpdateInviteMessageTemplate:
+    Type: Custom::UpdateInviteMessageTemplate
+    Properties:
+      ServiceToken: !GetAtt UpdateInviteMessageLambda.Arn
+      UserPoolId: !Ref UserPool
+      UserPoolDomain: !Ref UserPoolDomain
+      UserPoolClient: !Ref UserPoolClient
+      FrontendProdHost: !Ref FrontendProdHost
+      Region: !Ref AWS::Region
+
   # Cognito User Pool
   UserPool:
     Type: AWS::Cognito::UserPool
@@ -322,17 +334,6 @@ Resources:
     Properties:
       Domain: !Sub ${AWS::StackName}-domain
       UserPoolId: !Ref UserPool
-
-  # Update InviteMessageTemplate
-  UpdateInviteMessageTemplate:
-    Type: Custom::UpdateInviteMessageTemplate
-    Properties:
-      ServiceToken: !GetAtt UpdateInviteMessageLambda.Arn
-      UserPoolId: !Ref UserPool
-      UserPoolDomain: !Ref UserPoolDomain
-      UserPoolClient: !Ref UserPoolClient
-      FrontendProdHost: !Ref FrontendProdHost
-      Region: !Ref AWS::Region
 
   # Cognito ADMIN Group
   AdministratorsUserPoolGroup:
