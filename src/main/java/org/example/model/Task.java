@@ -52,19 +52,16 @@ public class Task {
     }
 
     @DynamoDbAttribute(value = "status")
-    @DynamoDbSecondaryPartitionKey(indexNames = "StatusIndex")
     public String getStatus() {
         return status;
     }
 
     @DynamoDbAttribute(value = "createdBy")
-    @DynamoDbSecondaryPartitionKey(indexNames = "CreatedByIndex")
     public String getCreatedBy() {
         return createdBy;
     }
 
     @DynamoDbAttribute(value = "deadline")
-    @DynamoDbSecondaryPartitionKey(indexNames = "DeadlineIndex")
     public String getDeadline() {
         return deadline;
     }
