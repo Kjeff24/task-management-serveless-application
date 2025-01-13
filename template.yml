@@ -232,24 +232,6 @@ Resources:
             Schedule: rate(5 minutes)
             Input: "{}"
 
-  # Lambda Function for Updating Invite Message Template
-  UpdateInviteMessageLambda:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-UpdateInviteMessageLambda
-      Handler: org.example.UpdateInviteMessageLambda::handleRequest
-      Runtime: java21
-      CodeUri: .
-      MemorySize: 512
-      Timeout: 30
-      Policies:
-        - AWSLambdaBasicExecutionRole
-        - Statement:
-            Effect: Allow
-            Action:
-              - cognito-idp:UpdateUserPool
-            Resource: !GetAtt UserPool.Arn
-
   # Cognito User Pool
   UserPool:
     Type: AWS::Cognito::UserPool
@@ -257,6 +239,14 @@ Resources:
       UserPoolName: !Sub ${AWS::StackName}-TaskManagementUserPool
       AdminCreateUserConfig:
         AllowAdminCreateUserOnly: true
+        InviteMessageTemplate:
+          EmailMessage: !Sub |
+            Hello {username},
+            
+            Welcome to our Task Management System! Your temporary password is {####}. Please use it to sign in and reset your password.
+            
+            Click here to sign in: ${FrontendProdHost}
+          EmailSubject: "Welcome to Task Management System"
       AutoVerifiedAttributes:
         - email
       UsernameAttributes:
@@ -315,24 +305,12 @@ Resources:
         IdToken: hours
         RefreshToken: days
 
-
   # Cognito User Pool Domain
   UserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
       Domain: !Sub ${AWS::StackName}-domain
       UserPoolId: !Ref UserPool
-
-  # Update InviteMessageTemplate
-  UpdateInviteMessageTemplate:
-    Type: Custom::UpdateInviteMessageTemplate
-    Properties:
-      ServiceToken: !GetAtt UpdateInviteMessageLambda.Arn
-      UserPoolId: !Ref UserPool
-      UserPoolDomain: !Ref UserPoolDomain
-      UserPoolClient: !Ref UserPoolClient
-      FrontendProdHost: !Ref FrontendProdHost
-      Region: !Ref AWS::Region
 
   # Cognito ADMIN Group
   AdministratorsUserPoolGroup:
@@ -620,6 +598,10 @@ Outputs:
   CognitoUserPoolClientInfo:
     Description: AWS CLI command for Amazon Cognito User Pool information
     Value: !Sub "aws cognito-idp describe-user-pool-client --user-pool-id ${UserPool} --client-id ${UserPoolClient}"
+
+  UpdateInviteMessageTemplate:
+    Description: Update InviteMessageTemplate to include login url
+    Value: !Sub "aws cognito-idp update-user-pool --user-pool-id ${UserPool} --admin-create-user-config 'AllowAdminCreateUserOnly=true,InviteMessageTemplate={EmailMessage=\"Hello {username}, Welcome to our Task Management System! Your temporary password is {####}. Please use it to sign in and reset your password. Click here to sign in: https://${UserPoolDomainName}.auth.${AWS::Region}.amazoncognito.com/login?client_id=${UserPoolClientId}&response_type=code&redirect_uri=${FrontendProdHost}\",EmailSubject=\"Welcome to Task Management System\"}'"
 
   UserPoolAdminGroupName:
     Description: User Pool group name for API administrators
