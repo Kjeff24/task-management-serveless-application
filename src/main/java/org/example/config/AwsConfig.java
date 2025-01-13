@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.sfn.SfnClient;
@@ -18,23 +17,17 @@ public class AwsConfig {
 
     @Bean
     public SnsClient snsClient() {
-        return SnsClient.builder()
-                .region(Region.of(awsRegion))
-                .build();
+        return SnsClient.create();
     }
 
     @Bean
     public SqsClient sqsClient() {
-        return SqsClient.builder()
-                .region(Region.of(awsRegion))
-                .build();
+        return SqsClient.create();
     }
 
     @Bean
     public DynamoDbClient dynamoDbClient() {
-        return DynamoDbClient.builder()
-                .region(Region.of(awsRegion))
-                .build();
+        return DynamoDbClient.create();
     }
 
     @Bean
@@ -46,14 +39,11 @@ public class AwsConfig {
 
     @Bean
     public CognitoIdentityProviderClient cognitoIdentityProviderClient() {
-        return CognitoIdentityProviderClient.builder()
-                .region(Region.of(awsRegion))
-                .build();
+        return CognitoIdentityProviderClient.create();
     }
 
     @Bean
     public SfnClient stepFunctionClient() {
-        return SfnClient.builder()
-                .build();
+        return SfnClient.create();
     }
 }
