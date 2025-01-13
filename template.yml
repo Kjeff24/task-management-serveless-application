@@ -232,6 +232,24 @@ Resources:
             Schedule: rate(5 minutes)
             Input: "{}"
 
+  # Lambda Function for Updating Invite Message Template
+  UpdateInviteMessageLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-UpdateInviteMessageLambda
+      Handler: org.example.UpdateInviteMessageLambda::handleRequest
+      Runtime: java21
+      CodeUri: .
+      MemorySize: 512
+      Timeout: 30
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Statement:
+            Effect: Allow
+            Action:
+              - cognito-idp:UpdateUserPool
+            Resource: !GetAtt UserPool.Arn
+
   # Cognito User Pool
   UserPool:
     Type: AWS::Cognito::UserPool
@@ -309,7 +327,7 @@ Resources:
   UpdateInviteMessageTemplate:
     Type: Custom::UpdateInviteMessageTemplate
     Properties:
-      ServiceToken: arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:UpdateInviteMessageLambda
+      ServiceToken: !GetAtt UpdateInviteMessageLambda.Arn
       UserPoolId: !Ref UserPool
       UserPoolDomain: !Ref UserPoolDomain
       UserPoolClient: !Ref UserPoolClient

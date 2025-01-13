@@ -8,7 +8,6 @@ import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityPr
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminCreateUserConfigType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.MessageTemplateType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UpdateUserPoolRequest;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.UpdateUserPoolResponse;
 
 public class UpdateInviteMessageLambda implements RequestHandler<CloudFormationCustomResourceEvent, Void> {
     private final CognitoIdentityProviderClient cognitoIdentityProviderClient;
