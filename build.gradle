@@ -19,7 +19,8 @@ dependencies {
           'software.amazon.awssdk:sqs:2.29.37',
           'software.amazon.awssdk:cognitoidentityprovider:2.29.37',
           'software.amazon.awssdk:sfn:2.29.37',
-          'com.amazonaws:aws-lambda-java-events:3.14.0'
+          'com.amazonaws:aws-lambda-java-events:3.14.0',
+          'org.apache.httpcomponents.client5:httpclient5:5.4.1'
   )
   compileOnly 'org.projectlombok:lombok:1.18.36'
   annotationProcessor 'org.projectlombok:lombok:1.18.36'
