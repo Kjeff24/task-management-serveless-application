@@ -400,8 +400,6 @@ Resources:
           AttributeType: S
         - AttributeName: deadline
           AttributeType: S
-        - AttributeName: createdBy
-          AttributeType: S
       KeySchema:
         - AttributeName: taskId
           KeyType: HASH
@@ -412,22 +410,12 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
-        - IndexName: StatusIndex
+        - IndexName: StatusAndDeadlineIndex
           KeySchema:
-              - AttributeName: status
-                KeyType: HASH
-          Projection:
-            ProjectionType: ALL
-        - IndexName: DeadlineIndex
-          KeySchema:
+            - AttributeName: status
+              KeyType: HASH
             - AttributeName: deadline
-              KeyType: HASH
-          Projection:
-            ProjectionType: ALL
-        - IndexName: CreatedByIndex
-          KeySchema:
-            - AttributeName: createdBy
-              KeyType: HASH
+              KeyType: RANGE
           Projection:
             ProjectionType: ALL
       BillingMode: PAY_PER_REQUEST

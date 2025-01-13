@@ -36,18 +36,18 @@ public class EventBridgeSchedulerLambda implements RequestHandler<Object, Void> 
     @Override
     public Void handleRequest(Object input, Context context) {
         LocalDateTime now = LocalDateTime.now();
-        String currentTime = now.toString();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm");
+        String currentTime = LocalDateTime.now().format(formatter);
 
         QueryRequest queryRequest = QueryRequest.builder()
                 .tableName(tasksTable)
-                .indexName("DeadlineIndex")
-                .keyConditionExpression("deadline <= :currentTime")
-                .filterExpression("#status <> :completed")
+                .indexName("StatusAndDeadlineIndex")
+                .keyConditionExpression("status = :status")
+                .filterExpression("deadline <= :currentTime")
                 .expressionAttributeValues(Map.of(
-                        ":currentTime", AttributeValue.builder().s(currentTime).build(),
-                        ":completed", AttributeValue.builder().s("completed").build()
+                        ":status", AttributeValue.builder().s("open").build(),
+                        ":currentTime", AttributeValue.builder().s(currentTime).build()
                 ))
-                .expressionAttributeNames(Map.of("#status", "status"))
                 .build();
 
         QueryResponse queryResponse = dynamoDbClient.query(queryRequest);

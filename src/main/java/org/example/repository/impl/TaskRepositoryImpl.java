@@ -1,9 +1,11 @@
 package org.example.repository.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.example.dto.*;
+import org.example.dto.TaskResponse;
+import org.example.dto.TaskUpdateAssignedToRequest;
+import org.example.dto.TaskUpdateStatusRequest;
+import org.example.dto.UserCommentRequest;
 import org.example.enums.TaskStatus;
-import org.example.exception.BadRequestException;
 import org.example.exception.NotFoundException;
 import org.example.model.Task;
 import org.example.repository.TaskRepository;
@@ -13,16 +15,11 @@ import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.*;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
-import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
@@ -88,7 +85,8 @@ public class TaskRepositoryImpl implements TaskRepository {
             task.setCompletedAt(LocalDateTime.now().format(LocalDateTimeConverter.FORMATTER));
         } else if (TaskStatus.open.toString().equals(request.status())) {
             task.setCompletedAt("");
-
+            task.setHasSentReminderNotification(0);
+            task.setHasSentDeadlineNotification(0);
         }
 
         task.setStatus(request.status());
@@ -105,68 +103,6 @@ public class TaskRepositoryImpl implements TaskRepository {
         return task;
     }
 
-    public List<Task> getTasksByStatus(String status) {
-        DynamoDbIndex<Task> index = getTable().index("StatusIndex");
-
-        Expression expression = Expression.builder()
-                .expression("status = :status")
-                .expressionValues(Map.of(":status", AttributeValue.builder().s(status).build()))
-                .build();
-
-        return index.query(r -> r.queryConditional(QueryConditional.keyEqualTo(k -> k.partitionValue(status)))
-                        .filterExpression(expression))
-                .stream()
-                .flatMap(page -> page.items().stream())
-                .collect(Collectors.toList());
-    }
-
-    public List<Task> getTasksByCreatedBy(String createdBy) {
-        DynamoDbIndex<Task> index = getTable().index("CreatedByIndex");
-
-        Expression expression = Expression.builder()
-                .expression("createdBy = :createdBy")
-                .expressionValues(Map.of(":createdBy", AttributeValue.builder().s(createdBy).build()))
-                .build();
-
-        return index.query(r -> r.queryConditional(QueryConditional.keyEqualTo(k -> k.partitionValue(createdBy)))
-                        .filterExpression(expression))
-                .stream()
-                .flatMap(page -> page.items().stream())
-                .collect(Collectors.toList());
-    }
-
-    public List<Task> getTasksNearDeadline() {
-        LocalDateTime oneHourFromNow = LocalDateTime.now().plusHours(1);
-        DynamoDbIndex<Task> index = getTable().index("DeadlineIndex");
-
-        Expression expression = Expression.builder()
-                .expression("deadline <= :deadline")
-                .expressionValues(Map.of(":deadline", AttributeValue.builder().s(oneHourFromNow.toString()).build()))
-                .build();
-
-        return index.query(r -> r.queryConditional(QueryConditional.sortLessThanOrEqualTo(k -> k.sortValue(oneHourFromNow.toString())))
-                        .filterExpression(expression))
-                .stream()
-                .flatMap(page -> page.items().stream())
-                .collect(Collectors.toList());
-    }
-
-    public List<Task> getTasksNearDeadlineWholeTable() {
-        LocalDateTime oneHourFromNow = LocalDateTime.now().plusHours(1);
-        Expression expression = Expression.builder()
-                .expression("deadline <= :deadline")
-                .expressionValues(Map.of(":deadline", AttributeValue.builder().s(oneHourFromNow.toString()).build()))
-                .build();
-
-        ScanEnhancedRequest scanRequest = ScanEnhancedRequest.builder()
-                .filterExpression(expression)
-                .build();
-
-        return getTable().scan(scanRequest)
-                .items()
-                .stream()
-                .collect(Collectors.toList());
-    }
 
     public Task updateTaskComment(String taskId, String comment) {
         Task task = findByTaskId(taskId).orElseThrow(
