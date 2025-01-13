@@ -42,8 +42,8 @@ public class EventBridgeSchedulerLambda implements RequestHandler<Object, Void> 
         QueryRequest queryRequest = QueryRequest.builder()
                 .tableName(tasksTable)
                 .indexName("StatusAndDeadlineIndex")
-                .keyConditionExpression("status = :status")
-                .filterExpression("deadline <= :currentTime")
+                .keyConditionExpression("#status = :status AND #deadline <= :currentTime")
+                .expressionAttributeNames(Map.of("#status", "status", "#deadline", "deadline"))
                 .expressionAttributeValues(Map.of(
                         ":status", AttributeValue.builder().s("open").build(),
                         ":currentTime", AttributeValue.builder().s(currentTime).build()
@@ -51,6 +51,7 @@ public class EventBridgeSchedulerLambda implements RequestHandler<Object, Void> 
                 .build();
 
         QueryResponse queryResponse = dynamoDbClient.query(queryRequest);
+
 
         for (Map<String, AttributeValue> item : queryResponse.items()) {
             String taskId = item.get("taskId").s();
