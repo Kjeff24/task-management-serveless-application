@@ -36,8 +36,9 @@ public class EventBridgeSchedulerLambda implements RequestHandler<Object, Void> 
     @Override
     public Void handleRequest(Object input, Context context) {
         LocalDateTime now = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm");
-        String currentTime = LocalDateTime.now().format(formatter);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+        String currentTime = now.format(formatter);
+        System.out.println("Current Time: " + currentTime);
 
         QueryRequest queryRequest = QueryRequest.builder()
                 .tableName(tasksTable)
@@ -52,6 +53,7 @@ public class EventBridgeSchedulerLambda implements RequestHandler<Object, Void> 
 
         QueryResponse queryResponse = dynamoDbClient.query(queryRequest);
 
+        System.out.println("Query Response: " + queryResponse.toString());
 
         for (Map<String, AttributeValue> item : queryResponse.items()) {
             String taskId = item.get("taskId").s();
