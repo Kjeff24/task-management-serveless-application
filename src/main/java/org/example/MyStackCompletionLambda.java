@@ -10,14 +10,17 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.example.util.PasswordGenerator;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminAddUserToGroupRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminCreateUserConfigType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminCreateUserRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.DeliveryMediumType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.MessageTemplateType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UpdateUserPoolRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.UserNotFoundException;
 import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sns.model.SubscribeRequest;
 
@@ -26,7 +29,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 public class MyStackCompletionLambda implements RequestHandler<CloudFormationCustomResourceEvent, Void> {
     private final CognitoIdentityProviderClient cognitoIdentityProviderClient;
@@ -69,36 +71,47 @@ public class MyStackCompletionLambda implements RequestHandler<CloudFormationCus
         String closedTaskTopicArn = event.getResourceProperties().get("ClosedTaskTopicArn").toString();
         String taskCompleteTopicArn = event.getResourceProperties().get("TaskCompleteTopicArn").toString();
 
-        if (adminEmail != null && !adminEmail.trim().isEmpty()) {
-            List<AttributeType> userAttributes = new ArrayList<>();
-            userAttributes.add(AttributeType.builder().name("email").value(adminEmail).build());
-            userAttributes.add(AttributeType.builder().name("email_verified").value("true").build());
+        if (adminEmail != null && !adminEmail.trim().equals("None") && !adminEmail.isEmpty()) {
+            try {
+                cognitoIdentityProviderClient.adminGetUser(AdminGetUserRequest.builder()
+                        .userPoolId(userPoolId)
+                        .username(adminEmail)
+                        .build());
 
-            AdminCreateUserRequest createUserRequest = AdminCreateUserRequest.builder()
-                    .userPoolId(userPoolId)
-                    .username(adminEmail)
-                    .userAttributes(userAttributes)
-                    .temporaryPassword(UUID.randomUUID().toString())
-                    .desiredDeliveryMediums(DeliveryMediumType.EMAIL)
-                    .build();
+                context.getLogger().log("User already exists: " + adminEmail);
+                responseData.put("Message", "User already exists: " + adminEmail);
+            } catch (UserNotFoundException e) {
+                List<AttributeType> userAttributes = new ArrayList<>();
+                userAttributes.add(AttributeType.builder().name("email").value(adminEmail).build());
+                userAttributes.add(AttributeType.builder().name("email_verified").value("true").build());
 
-            cognitoIdentityProviderClient.adminCreateUser(createUserRequest);
+                AdminCreateUserRequest createUserRequest = AdminCreateUserRequest.builder()
+                        .userPoolId(userPoolId)
+                        .username(adminEmail)
+                        .userAttributes(userAttributes)
+                        .temporaryPassword(PasswordGenerator.generatePassword(9))
+                        .desiredDeliveryMediums(DeliveryMediumType.EMAIL)
+                        .build();
 
-            AdminAddUserToGroupRequest addUserToGroupRequest = AdminAddUserToGroupRequest.builder()
-                    .userPoolId(userPoolId)
-                    .username(adminEmail)
-                    .groupName(adminGroup)
-                    .build();
+                cognitoIdentityProviderClient.adminCreateUser(createUserRequest);
 
-            cognitoIdentityProviderClient.adminAddUserToGroup(addUserToGroupRequest);
+                AdminAddUserToGroupRequest addUserToGroupRequest = AdminAddUserToGroupRequest.builder()
+                        .userPoolId(userPoolId)
+                        .username(adminEmail)
+                        .groupName(adminGroup)
+                        .build();
 
-            subscribeToTopic(closedTaskTopicArn, adminEmail);
-            subscribeToTopic(taskCompleteTopicArn, adminEmail);
+                cognitoIdentityProviderClient.adminAddUserToGroup(addUserToGroupRequest);
 
-            context.getLogger().log("Admin created successfully");
-            responseData.put("Message", "Admin created successfully");
+                subscribeToTopic(closedTaskTopicArn, adminEmail);
+                subscribeToTopic(taskCompleteTopicArn, adminEmail);
+
+                context.getLogger().log("Admin created successfully");
+                responseData.put("Message", "Admin created successfully");
+            }
         }
     }
+
 
     private void subscribeToTopic(String topicArn, String endpoint) {
         SubscribeRequest request = SubscribeRequest.builder()
@@ -115,9 +128,13 @@ public class MyStackCompletionLambda implements RequestHandler<CloudFormationCus
         String frontendHost = event.getResourceProperties().get("FrontendProdHost").toString();
         String region = event.getResourceProperties().get("Region").toString();
         MessageTemplateType inviteMessageTemplate = MessageTemplateType.builder()
-                .emailMessage(String.format("Hello {username}, Welcome to our Task Management System! "
-                                + "Your temporary password is {####}. Click here to sign in: "
-                                + "https://%s.auth.%s.amazoncognito.com/login?client_id=%s&response_type=code&redirect_uri=%s",
+                .emailMessage(String.format("""
+                                Hello {username}, Welcome to our Task Management System! \
+
+                                Your temporary password is {####}\
+
+                                Click here to sign in: \
+                                https://%s.auth.%s.amazoncognito.com/login?client_id=%s&response_type=code&redirect_uri=%s""",
                         domain, region, clientId, frontendHost))
                 .emailSubject("Welcome to Task Management System")
                 .build();
