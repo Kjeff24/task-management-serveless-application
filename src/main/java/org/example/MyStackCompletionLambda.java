@@ -69,7 +69,7 @@ public class MyStackCompletionLambda implements RequestHandler<CloudFormationCus
         String closedTaskTopicArn = event.getResourceProperties().get("ClosedTaskTopicArn").toString();
         String taskCompleteTopicArn = event.getResourceProperties().get("TaskCompleteTopicArn").toString();
 
-        if (adminEmail != null) {
+        if (adminEmail != null && !adminEmail.trim().isEmpty()) {
             List<AttributeType> userAttributes = new ArrayList<>();
             userAttributes.add(AttributeType.builder().name("email").value(adminEmail).build());
             userAttributes.add(AttributeType.builder().name("email_verified").value("true").build());
