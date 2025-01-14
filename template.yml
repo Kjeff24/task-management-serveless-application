@@ -179,6 +179,9 @@ Resources:
             Action:
               - "dynamodb:UpdateItem"
             Resource: !GetAtt TasksTable.Arn
+      Environment:
+        Variables:
+          TASKS_TABLE_NAME: !Ref DynamodbTasksTableName
 
   # Lambda Function for Deadline SNS Notification Processing
   SendDeadlineNotificationLambda:

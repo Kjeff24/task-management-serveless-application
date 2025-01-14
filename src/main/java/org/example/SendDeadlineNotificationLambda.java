@@ -49,7 +49,7 @@ public class SendDeadlineNotificationLambda implements RequestHandler<Map<String
         }
 
         if (adminEmail != null && !adminEmail.isEmpty()) {
-            messageAttributes.put("userEmail", MessageAttributeValue.builder()
+            messageAttributes.put("adminEmail", MessageAttributeValue.builder()
                     .dataType("String")
                     .stringValue(adminEmail)
                     .build());
@@ -93,7 +93,7 @@ public class SendDeadlineNotificationLambda implements RequestHandler<Map<String
             if (assignedTo.equals(endpoint)) {
                 filterPolicy = String.format("{\"userEmail\": [\"%s\"]}", assignedTo);
             } else if (createdBy.equals(endpoint)) {
-                filterPolicy = String.format("{\"userEmail\": [\"%s\"]}", createdBy);
+                filterPolicy = String.format("{\"adminEmail\": [\"%s\"]}", createdBy);
             } else {
                 filterPolicy = "{\"userEmail\": [\"none\"]}";
             }
