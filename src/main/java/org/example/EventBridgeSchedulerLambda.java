@@ -66,17 +66,20 @@ public class EventBridgeSchedulerLambda implements RequestHandler<Object, Void> 
             int hasSentDeadlineNotification = Integer.parseInt(item.get("hasSentDeadlineNotification").n());
             int hasSentReminderNotification = Integer.parseInt(item.get("hasSentReminderNotification").n());
 
-            LocalDateTime taskDeadline = LocalDateTime.parse(deadline, formatter);
+            LocalDateTime taskDeadline = LocalDateTime.parse(deadline, DateTimeFormatter.ISO_DATE_TIME);
 
             long minutesUntilDeadline = ChronoUnit.MINUTES.between(now, taskDeadline);
             Map<String, MessageAttributeValue> attributes = new HashMap<>();
+
+            String taskDetails = "Message: " + "This is a task deadline reminder" +
+                    "\nTask ID: " + taskId +
+                    "\nTask Description: " + taskDescription +
+                    "\nTask Name: " + taskName +
+                    "\nTask Deadline: " + deadline +
+                    "\nTask Status: " + status;
+
             if (minutesUntilDeadline <= 60 && minutesUntilDeadline > 0 && hasSentReminderNotification == 0 && status.equalsIgnoreCase("open")) {
-                String taskDetails = "Message: " + "This is a task deadline reminder" +
-                        "\nTask ID: " + taskId +
-                        "\nTask Description: " + taskDescription +
-                        "\nTask Name: " + taskName +
-                        "\nTask Deadline: " + deadline +
-                        "\nTask Status: " + status;
+
                 attributes.put("sendTo", MessageAttributeValue.builder().dataType("String").stringValue(assignedTo).build());
                 attributes.put("snsTopicArn", MessageAttributeValue.builder().dataType("String").stringValue(taskDeadlineTopicArn).build());
                 attributes.put("subject", MessageAttributeValue.builder().dataType("String").stringValue("TASK DEADLINE REMINDER").build());
@@ -90,8 +93,9 @@ public class EventBridgeSchedulerLambda implements RequestHandler<Object, Void> 
                 attributes.put("taskId", MessageAttributeValue.builder().dataType("String").stringValue(taskId).build());
                 attributes.put("assignedTo", MessageAttributeValue.builder().dataType("String").stringValue(assignedTo).build());
                 attributes.put("createdBy", MessageAttributeValue.builder().dataType("String").stringValue(createdBy).build());
+                attributes.put("deadline", MessageAttributeValue.builder().dataType("String").stringValue(deadline).build());
                 attributes.put("workflowType", MessageAttributeValue.builder().dataType("String").stringValue("taskDeadline").build());
-                sendToSQS(attributes, null);
+                sendToSQS(attributes, taskDetails);
 
                 updateDynamoDB(taskId, "hasSentDeadlineNotification");
                 context.getLogger().log("Sent deadline notification for task: " + taskId + " and updated status to expired");
