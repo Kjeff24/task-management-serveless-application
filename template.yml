@@ -581,7 +581,8 @@ Resources:
                         "TopicArn": "${ClosedTasksNotificationTopic}",
                         "TaskId.$": "$.taskId",
                         "UserEmail.$": "$.assignedTo",
-                        "AdminEmail.$": "$.createdBy"
+                        "AdminEmail.$": "$.createdBy",
+                        "Deadline.$": "$.deadline"
                       },
                       "End": true
                     }

@@ -23,7 +23,7 @@ public class UpdateTaskStatusLambda implements RequestHandler<Map<String, Object
     public String handleRequest(Map<String, Object> event, Context context) {
         context.getLogger().log("Received event: " + event);
 
-        String taskId = (String) event.get("taskId");
+        String taskId = (String) event.get("TaskId");
         if (taskId == null) {
             throw new IllegalArgumentException("Task ID is missing.");
         }
