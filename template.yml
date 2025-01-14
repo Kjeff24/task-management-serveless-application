@@ -26,6 +26,10 @@ Parameters:
     Description: Dynamodb table for task
     Type: String
     Default: TasksTable
+  AdminEmail:
+    Description: Admin email
+    Type: String
+    Default: null
 
 Resources:
   # Lambda Function for API Gateway
@@ -59,7 +63,6 @@ Resources:
             Effect: Allow
             Action:
               - cognito-idp:AdminCreateUser
-              - cognito-idp:AdminSetUserPassword
               - cognito-idp:AdminAddUserToGroup
               - cognito-idp:AdminListGroupsForUser
               - cognito-idp:ListUsers
@@ -159,7 +162,7 @@ Resources:
               - !Ref ClosedTasksNotificationTopic
               - !Ref ReopenedTasksNotificationTopic
 
-  # Lambda Function for SQS Notification Processing
+  # Lambda Function to update task status
   UpdateTaskStatusLambda:
     Type: AWS::Serverless::Function
     Properties:
@@ -232,12 +235,12 @@ Resources:
             Schedule: rate(5 minutes)
             Input: "{}"
 
-  # Lambda Function for Updating Invite Message Template
-  UpdateInviteMessageLambda:
+  # Lambda Function for Updating Invite Message Template and creating admin user
+  MyStackCompletionLambda:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-UpdateInviteMessageLambda
-      Handler: org.example.UpdateInviteMessageLambda::handleRequest
+      FunctionName: !Sub ${AWS::StackName}-MyStackCompletionLambda
+      Handler: org.example.MyStackCompletionLambda::handleRequest
       Runtime: java21
       CodeUri: .
       MemorySize: 512
@@ -248,20 +251,33 @@ Resources:
             Effect: Allow
             Action:
               - cognito-idp:UpdateUserPool
+              - cognito-idp:AdminCreateUser
+              - cognito-idp:AdminAddUserToGroup
             Resource: !GetAtt UserPool.Arn
+        - Statement:
+            Effect: Allow
+            Action:
+              - sns:Subscribe
+            Resource:
+              - !Ref TaskCompleteNotificationTopic
+              - !Ref ClosedTasksNotificationTopic
 
 
-  # Update InviteMessageTemplate after resource creation
-  UpdateInviteMessageTemplate:
+  # Custom resource to perform actions after resource creation
+  MyCustomResource:
     Type: Custom::UpdateInviteMessageTemplate
     Properties:
-      ServiceToken: !GetAtt UpdateInviteMessageLambda.Arn
+      ServiceToken: !GetAtt MyStackCompletionLambda.Arn
       ServiceTimeout: 30
       UserPoolId: !Ref UserPool
       UserPoolDomain: !Ref UserPoolDomain
       UserPoolClient: !Ref UserPoolClient
       FrontendProdHost: !Ref FrontendProdHost
       Region: !Ref AWS::Region
+      AdminEmail: !Ref AdminEmail
+      AdminGroup: !Ref UserPoolAdminGroupName
+      TaskCompleteTopicArn: !Ref TaskCompleteNotificationTopic
+      ClosedTaskTopicArn: !Ref ClosedTasksNotificationTopic
 
   # Cognito User Pool
   UserPool:
