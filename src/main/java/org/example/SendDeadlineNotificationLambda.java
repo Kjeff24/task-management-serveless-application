@@ -26,12 +26,8 @@ public class SendDeadlineNotificationLambda implements RequestHandler<Map<String
         String adminEmail = (String) event.get("AdminEmail");
         String taskDeadline = (String) event.get("Deadline");
 
-        if (topicArn == null || taskId == null || userEmail == null || taskDeadline == null) {
-            throw new IllegalArgumentException("Missing required fields in the event.");
-        }
-
         String message = String.format(
-                "Task ID: %s\nAssigned User: %s\nDeadline: %s\nStatus: Expired",
+                "Message: Task has expired\nTask ID: %s\nAssigned User: %s\nDeadline: %s\nStatus: Expired",
                 taskId, userEmail, taskDeadline
         );
 

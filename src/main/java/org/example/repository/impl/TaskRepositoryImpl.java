@@ -9,10 +9,13 @@ import org.example.enums.TaskStatus;
 import org.example.exception.NotFoundException;
 import org.example.model.Task;
 import org.example.repository.TaskRepository;
-import org.example.util.LocalDateTimeConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
-import software.amazon.awssdk.enhanced.dynamodb.*;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.Key;
+import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 
@@ -82,7 +85,7 @@ public class TaskRepositoryImpl implements TaskRepository {
         Task task = findByTaskId(request.taskId()).orElseThrow(() -> new NotFoundException("Task not found"));
 
         if (TaskStatus.completed.toString().equals(request.status())) {
-            task.setCompletedAt(LocalDateTime.now().format(LocalDateTimeConverter.FORMATTER));
+            task.setCompletedAt(LocalDateTime.now().toString());
         } else if (TaskStatus.open.toString().equals(request.status())) {
             task.setCompletedAt("");
             task.setHasSentReminderNotification(0);

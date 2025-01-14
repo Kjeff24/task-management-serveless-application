@@ -228,6 +228,11 @@ Resources:
             Resource:
               - !GetAtt TasksTable.Arn
               - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamodbTasksTableName}/index/*
+        - Statement:
+            Effect: Allow
+            Action:
+              - sqs:sendmessage
+            Resource: !GetAtt SQSTaskQueue.Arn
       Events:
         TaskDeadlineEvent:
           Type: Schedule
@@ -576,7 +581,8 @@ Resources:
                         "TopicArn": "${ClosedTasksNotificationTopic}",
                         "TaskId.$": "$.taskId",
                         "UserEmail.$": "$.assignedTo",
-                        "AdminEmail.$": "$.createdBy"
+                        "AdminEmail.$": "$.createdBy",
+                        "Deadline.$": "$.deadline"
                       },
                       "End": true
                     }

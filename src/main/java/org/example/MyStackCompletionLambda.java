@@ -127,15 +127,9 @@ public class MyStackCompletionLambda implements RequestHandler<CloudFormationCus
         String clientId = event.getResourceProperties().get("UserPoolClient").toString();
         String frontendHost = event.getResourceProperties().get("FrontendProdHost").toString();
         String region = event.getResourceProperties().get("Region").toString();
+
         MessageTemplateType inviteMessageTemplate = MessageTemplateType.builder()
-                .emailMessage(String.format("""
-                                Hello {username}, Welcome to our Task Management System! \
-
-                                Your temporary password is {####}\
-
-                                Click here to sign in: \
-                                https://%s.auth.%s.amazoncognito.com/login?client_id=%s&response_type=code&redirect_uri=%s""",
-                        domain, region, clientId, frontendHost))
+                .emailMessage("Hello {username}, Welcome to our Task Management System!\n\nYour temporary password is {####}\n\nClick here to sign in:\nhttps://%s.auth.%s.amazoncognito.com/login?client_id=%s&response_type=code&redirect_uri=%s".formatted(domain, region, clientId, frontendHost))
                 .emailSubject("Welcome to Task Management System")
                 .build();
 

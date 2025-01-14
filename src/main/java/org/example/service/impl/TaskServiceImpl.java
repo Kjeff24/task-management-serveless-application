@@ -1,7 +1,11 @@
 package org.example.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.example.dto.*;
+import org.example.dto.TaskRequest;
+import org.example.dto.TaskResponse;
+import org.example.dto.TaskUpdateAssignedToRequest;
+import org.example.dto.TaskUpdateStatusRequest;
+import org.example.dto.UserCommentRequest;
 import org.example.enums.TaskStatus;
 import org.example.exception.NotFoundException;
 import org.example.mapper.TaskMapper;
@@ -9,11 +13,8 @@ import org.example.model.Task;
 import org.example.repository.TaskRepository;
 import org.example.service.SqsService;
 import org.example.service.TaskService;
-import org.example.util.LocalDateTimeConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -73,9 +74,9 @@ public class TaskServiceImpl implements TaskService {
         Task taskToUpdate = getTaskById(taskId);
         taskToUpdate.setName(taskRequest.name());
         taskToUpdate.setDescription(taskRequest.description());
-        taskToUpdate.setDeadline(taskRequest.deadline().format(LocalDateTimeConverter.FORMATTER));
+        taskToUpdate.setDeadline(taskRequest.deadline().toString());
 
-        if(!taskToUpdate.getAssignedTo().equalsIgnoreCase(taskRequest.assignedTo())) {
+        if (!taskToUpdate.getAssignedTo().equalsIgnoreCase(taskRequest.assignedTo())) {
             taskToUpdate.setAssignedTo(taskRequest.assignedTo());
             sqsService.sendToSQS(taskToUpdate, "TASK RE-ASSIGNMENT NOTIFICATION", taskToUpdate.getAssignedTo(), "Task has been re-assigned to you", tasksAssignmentTopicArn);
         }

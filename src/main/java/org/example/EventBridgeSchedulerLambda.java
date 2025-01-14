@@ -36,8 +36,9 @@ public class EventBridgeSchedulerLambda implements RequestHandler<Object, Void> 
     @Override
     public Void handleRequest(Object input, Context context) {
         LocalDateTime now = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm");
-        String currentTime = LocalDateTime.now().format(formatter);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+        String currentTime = now.format(formatter);
+        System.out.println("Current Time: " + currentTime);
 
         QueryRequest queryRequest = QueryRequest.builder()
                 .tableName(tasksTable)
@@ -52,6 +53,7 @@ public class EventBridgeSchedulerLambda implements RequestHandler<Object, Void> 
 
         QueryResponse queryResponse = dynamoDbClient.query(queryRequest);
 
+        System.out.println("Query Response: " + queryResponse.toString());
 
         for (Map<String, AttributeValue> item : queryResponse.items()) {
             String taskId = item.get("taskId").s();
@@ -68,13 +70,16 @@ public class EventBridgeSchedulerLambda implements RequestHandler<Object, Void> 
 
             long minutesUntilDeadline = ChronoUnit.MINUTES.between(now, taskDeadline);
             Map<String, MessageAttributeValue> attributes = new HashMap<>();
+
+            String taskDetails = "Message: " + "This is a task deadline reminder" +
+                    "\nTask ID: " + taskId +
+                    "\nTask Description: " + taskDescription +
+                    "\nTask Name: " + taskName +
+                    "\nTask Deadline: " + deadline +
+                    "\nTask Status: " + status;
+
             if (minutesUntilDeadline <= 60 && minutesUntilDeadline > 0 && hasSentReminderNotification == 0 && status.equalsIgnoreCase("open")) {
-                String taskDetails = "Message: " + "This is a task deadline reminder" +
-                        "\nTask ID: " + taskId +
-                        "\nTask Description: " + taskDescription +
-                        "\nTask Name: " + taskName +
-                        "\nTask Deadline: " + deadline +
-                        "\nTask Status: " + status;
+
                 attributes.put("sendTo", MessageAttributeValue.builder().dataType("String").stringValue(assignedTo).build());
                 attributes.put("snsTopicArn", MessageAttributeValue.builder().dataType("String").stringValue(taskDeadlineTopicArn).build());
                 attributes.put("subject", MessageAttributeValue.builder().dataType("String").stringValue("TASK DEADLINE REMINDER").build());
@@ -88,8 +93,9 @@ public class EventBridgeSchedulerLambda implements RequestHandler<Object, Void> 
                 attributes.put("taskId", MessageAttributeValue.builder().dataType("String").stringValue(taskId).build());
                 attributes.put("assignedTo", MessageAttributeValue.builder().dataType("String").stringValue(assignedTo).build());
                 attributes.put("createdBy", MessageAttributeValue.builder().dataType("String").stringValue(createdBy).build());
+                attributes.put("deadline", MessageAttributeValue.builder().dataType("String").stringValue(deadline).build());
                 attributes.put("workflowType", MessageAttributeValue.builder().dataType("String").stringValue("taskDeadline").build());
-                sendToSQS(attributes, null);
+                sendToSQS(attributes, taskDetails);
 
                 updateDynamoDB(taskId, "hasSentDeadlineNotification");
                 context.getLogger().log("Sent deadline notification for task: " + taskId + " and updated status to expired");
