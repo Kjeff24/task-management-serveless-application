@@ -66,7 +66,7 @@ public class EventBridgeSchedulerLambda implements RequestHandler<Object, Void> 
             int hasSentDeadlineNotification = Integer.parseInt(item.get("hasSentDeadlineNotification").n());
             int hasSentReminderNotification = Integer.parseInt(item.get("hasSentReminderNotification").n());
 
-            LocalDateTime taskDeadline = LocalDateTime.parse(deadline, DateTimeFormatter.ISO_DATE_TIME);
+            LocalDateTime taskDeadline = LocalDateTime.parse(deadline, formatter);
 
             long minutesUntilDeadline = ChronoUnit.MINUTES.between(now, taskDeadline);
             Map<String, MessageAttributeValue> attributes = new HashMap<>();
