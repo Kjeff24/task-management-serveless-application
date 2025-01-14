@@ -29,7 +29,7 @@ Parameters:
   AdminEmail:
     Description: Admin email
     Type: String
-    Default: null
+    Default: ""
 
 Resources:
   # Lambda Function for API Gateway
@@ -253,6 +253,7 @@ Resources:
               - cognito-idp:UpdateUserPool
               - cognito-idp:AdminCreateUser
               - cognito-idp:AdminAddUserToGroup
+              - cognito-idp:AdminGetUser
             Resource: !GetAtt UserPool.Arn
         - Statement:
             Effect: Allow
