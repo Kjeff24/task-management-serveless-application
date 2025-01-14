@@ -48,3 +48,4 @@ template-3.yml
 samconfig.toml
 
 .env
+export_variables.sh
