@@ -133,9 +133,14 @@ public class TaskRepositoryImpl implements TaskRepository {
                 .filter(task -> TaskStatus.open.toString().equalsIgnoreCase(task.getStatus()))
                 .toList();
 
+        List<Task> expiredTasks = tasks.stream()
+                .filter(task -> TaskStatus.expired.toString().equalsIgnoreCase(task.getStatus()))
+                .toList();
+
         return TaskResponse.builder()
                 .open(openTasks)
                 .completed(completedTasks)
+                .expired(expiredTasks)
                 .build();
     }
 }

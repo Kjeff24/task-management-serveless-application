@@ -11,4 +11,5 @@ import java.util.List;
 public class TaskResponse {
     List<Task> open;
     List<Task> completed;
+    List<Task> expired;
 }
