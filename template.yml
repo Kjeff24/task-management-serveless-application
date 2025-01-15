@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: AWS Serverless Spring Boot 2 API - org.example::spring-boot-serveless
+Description: AWS Serverless Spring Boot 2 API - org.example::spring-boot-serverless
 Globals:
   Api:
     EndpointConfiguration: REGIONAL
@@ -374,7 +374,7 @@ Resources:
   TeamMembersUserPoolGroup:
     Type: AWS::Cognito::UserPoolGroup
     Properties:
-      Description: User group for team memmbers
+      Description: User group for team members
       GroupName: !Ref UserPoolTeamGroupName
       Precedence: 0
       UserPoolId: !Ref UserPool
