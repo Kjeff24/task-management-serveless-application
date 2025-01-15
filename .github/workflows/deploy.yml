@@ -59,7 +59,7 @@ jobs:
           fi
           
           sam deploy --no-confirm-changeset \
-          --stack-name task-manager \
+          --stack-name task-manager-test \
           --resolve-s3 \
           --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
           $PARAM_OVERRIDES
