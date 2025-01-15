@@ -94,7 +94,8 @@ public class EventBridgeSchedulerLambda implements RequestHandler<Object, Void> 
                 updateDynamoDB(taskId, "hasSentReminderNotification");
                 context.getLogger().log("Sent reminder notification for task: " + taskId);
 
-            } else if (minutesUntilDeadline <= 0 && hasSentDeadlineNotification == 0) {
+            }
+            if (minutesUntilDeadline <= 0 && hasSentDeadlineNotification == 0) {
                 attributes.put("taskId", MessageAttributeValue.builder().dataType("String").stringValue(taskId).build());
                 attributes.put("assignedTo", MessageAttributeValue.builder().dataType("String").stringValue(assignedTo).build());
                 attributes.put("createdBy", MessageAttributeValue.builder().dataType("String").stringValue(createdBy).build());
