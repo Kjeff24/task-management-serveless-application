@@ -274,7 +274,7 @@ Resources:
 
   # Custom resource to perform actions after resource creation
   MyCustomResource:
-    Type: Custom::UpdateInviteMessageTemplate
+    Type: Custom::MyCustomResource
     Properties:
       ServiceToken: !GetAtt MyStackCompletionLambda.Arn
       ServiceTimeout: 30
