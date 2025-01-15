@@ -12,6 +12,7 @@ import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -35,19 +36,23 @@ public class EventBridgeSchedulerLambda implements RequestHandler<Object, Void> 
 
     @Override
     public Void handleRequest(Object input, Context context) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+        LocalDateTime oneHourFromNow = now.plusHours(1);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
         String currentTime = now.format(formatter);
-        System.out.println("Current Time: " + currentTime);
+        String oneHourLaterTime = oneHourFromNow.format(formatter);
+        context.getLogger().log("Current Time: " + currentTime);
+        context.getLogger().log("One Hour Later Time: " + oneHourLaterTime);
 
         QueryRequest queryRequest = QueryRequest.builder()
                 .tableName(tasksTable)
                 .indexName("StatusAndDeadlineIndex")
-                .keyConditionExpression("#status = :status AND #deadline <= :currentTime")
+                .keyConditionExpression("#status = :status AND #deadline BETWEEN :currentTime AND :oneHourLaterTime")
                 .expressionAttributeNames(Map.of("#status", "status", "#deadline", "deadline"))
                 .expressionAttributeValues(Map.of(
                         ":status", AttributeValue.builder().s("open").build(),
-                        ":currentTime", AttributeValue.builder().s(currentTime).build()
+                        ":currentTime", AttributeValue.builder().s(currentTime).build(),
+                        ":oneHourLaterTime", AttributeValue.builder().s(oneHourLaterTime).build()
                 ))
                 .build();
 
@@ -78,7 +83,7 @@ public class EventBridgeSchedulerLambda implements RequestHandler<Object, Void> 
                     "\nTask Deadline: " + deadline +
                     "\nTask Status: " + status;
 
-            if (minutesUntilDeadline <= 60 && minutesUntilDeadline > 0 && hasSentReminderNotification == 0 && status.equalsIgnoreCase("open")) {
+            if (minutesUntilDeadline <= 60 && minutesUntilDeadline > 0 && hasSentReminderNotification == 0) {
 
                 attributes.put("sendTo", MessageAttributeValue.builder().dataType("String").stringValue(assignedTo).build());
                 attributes.put("snsTopicArn", MessageAttributeValue.builder().dataType("String").stringValue(taskDeadlineTopicArn).build());
@@ -89,7 +94,7 @@ public class EventBridgeSchedulerLambda implements RequestHandler<Object, Void> 
                 updateDynamoDB(taskId, "hasSentReminderNotification");
                 context.getLogger().log("Sent reminder notification for task: " + taskId);
 
-            } else if (minutesUntilDeadline <= 0 && hasSentDeadlineNotification == 0 && status.equalsIgnoreCase("open")) {
+            } else if (minutesUntilDeadline <= 0 && hasSentDeadlineNotification == 0) {
                 attributes.put("taskId", MessageAttributeValue.builder().dataType("String").stringValue(taskId).build());
                 attributes.put("assignedTo", MessageAttributeValue.builder().dataType("String").stringValue(assignedTo).build());
                 attributes.put("createdBy", MessageAttributeValue.builder().dataType("String").stringValue(createdBy).build());
