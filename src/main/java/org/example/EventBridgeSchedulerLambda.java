@@ -76,8 +76,7 @@ public class EventBridgeSchedulerLambda implements RequestHandler<Object, Void> 
             long minutesUntilDeadline = ChronoUnit.MINUTES.between(now, taskDeadline);
             Map<String, MessageAttributeValue> attributes = new HashMap<>();
 
-            String taskDetails = "Message: " + "This is a task deadline reminder" +
-                    "\nTask ID: " + taskId +
+            String taskDetails = "Task ID: " + taskId +
                     "\nTask Description: " + taskDescription +
                     "\nTask Name: " + taskName +
                     "\nTask Deadline: " + deadline +
