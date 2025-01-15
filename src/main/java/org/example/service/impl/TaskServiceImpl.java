@@ -46,9 +46,10 @@ public class TaskServiceImpl implements TaskService {
     }
 
     public Task updateTaskStatus(TaskUpdateStatusRequest request) {
-        if (request.status().equals(TaskStatus.open.toString()) && request.deadline().isBefore(LocalDateTime.now())){
+        if (request.status().equals(TaskStatus.open.toString()) && request.deadline() != null && request.deadline().isBefore(LocalDateTime.now())){
             throw new BadRequestException("Cannot reopen a task with a past deadline.");
         }
+
         Task task = taskRepository.updateTaskStatus(request);
         if (request.status().equals(TaskStatus.open.toString())) {
             sqsService.sendToSQS(task, "TASK RE-OPEN NOTIFICATION", task.getAssignedTo(), "Task has been re-opened, ensure you complete it", reopenedTasksTopicArn);
