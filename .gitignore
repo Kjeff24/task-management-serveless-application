@@ -49,3 +49,4 @@ samconfig.toml
 
 .env
 export_variables.sh
+deploy.yml

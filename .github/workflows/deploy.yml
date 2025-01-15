@@ -1,14 +1,21 @@
-name: Build and Deploy Task Management System
+name: Deploy Spring Boot Serverless Function
 
 on:
   push:
     branches:
-      - prod
       - test
+      - prod
+
+env:
+  FRONT_END_URI: ${{ secrets.FRONT_END_URI }}
+  ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
 jobs:
   build:
-    name: Build Project
+    name: Build with Maven
     runs-on: ubuntu-latest
 
     steps:
@@ -32,70 +39,37 @@ jobs:
       - name: Build with Maven
         run: mvn clean package
 
-      - name: Package with SAM
+      - name: Build with SAM
         run: sam build
 
-  deploy-prod:
-    name: Deploy to Prod
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.ref == 'refs/heads/prod'
-    env:
-      FRONT_END_URI: ${{ secrets.FRONT_END_URI_prod }}
-      ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL_prod }}
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      - name: Configure AWS CLI
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Upload SAM Build Artifacts
+        uses: actions/upload-artifact@v3
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Deploy using SAM
-        run: |
-          PARAM_OVERRIDES=""
-          
-          if [ -n "$FRONT_END_URI" ]; then
-            PARAM_OVERRIDES="$PARAM_OVERRIDES FrontendProdHost=$FRONT_END_URI"
-          fi
-          
-          if [ -n "$ADMIN_EMAIL" ]; then
-            PARAM_OVERRIDES="$PARAM_OVERRIDES AdminEmail=$ADMIN_EMAIL"
-          fi
-          
-          if [ -n "$PARAM_OVERRIDES" ]; then
-            PARAM_OVERRIDES="--parameter-overrides $PARAM_OVERRIDES"
-          fi
-          
-          sam deploy --no-confirm-changeset \
-          --stack-name task-manager-prod \
-          --resolve-s3 \
-          --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
-          $PARAM_OVERRIDES
+          name: sam-build-artifacts
+          path: .aws-sam/build
 
   deploy-test:
-    name: Deploy to Test
+    name: Deploy to AWS (Test)
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/test'
-    env:
-      FRONT_END_URI: ${{ secrets.FRONT_END_URI_test }}
-      ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL_test }}
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
+      - name: Download SAM Build Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: sam-build-artifacts
+          path: .aws-sam/build
+
       - name: Configure AWS CLI
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Deploy using SAM
         run: |
@@ -115,6 +89,51 @@ jobs:
           
           sam deploy --no-confirm-changeset \
           --stack-name task-manager-test \
+          --resolve-s3 \
+          --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+          $PARAM_OVERRIDES
+
+  deploy-prod:
+    name: Deploy to AWS (Prod)
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/prod'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Download SAM Build Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: sam-build-artifacts
+          path: .aws-sam/build
+
+      - name: Configure AWS CLI
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy using SAM
+        run: |
+          PARAM_OVERRIDES=""
+          
+          if [ -n "$FRONT_END_URI" ]; then
+            PARAM_OVERRIDES="$PARAM_OVERRIDES FrontendProdHost=$FRONT_END_URI"
+          fi
+          
+          if [ -n "$ADMIN_EMAIL" ]; then
+            PARAM_OVERRIDES="$PARAM_OVERRIDES AdminEmail=$ADMIN_EMAIL"
+          fi
+          
+          if [ -n "$PARAM_OVERRIDES" ]; then
+            PARAM_OVERRIDES="--parameter-overrides $PARAM_OVERRIDES"
+          fi
+          
+          sam deploy --no-confirm-changeset \
+          --stack-name task-manager \
           --resolve-s3 \
           --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
           $PARAM_OVERRIDES
