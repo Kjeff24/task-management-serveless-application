@@ -87,9 +87,12 @@ public class TaskRepositoryImpl implements TaskRepository {
         if (TaskStatus.completed.toString().equals(request.status())) {
             task.setCompletedAt(LocalDateTime.now().toString());
         } else if (TaskStatus.open.toString().equals(request.status())) {
-            task.setCompletedAt("");
+            task.setCompletedAt(null);
             task.setHasSentReminderNotification(0);
             task.setHasSentDeadlineNotification(0);
+            if (request.deadline() != null && !request.deadline().toString().isEmpty()) {
+                task.setDeadline(request.deadline().toString());
+            }
         }
 
         task.setStatus(request.status());
