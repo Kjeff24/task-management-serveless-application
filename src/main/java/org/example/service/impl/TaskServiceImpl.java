@@ -7,6 +7,7 @@ import org.example.dto.TaskUpdateAssignedToRequest;
 import org.example.dto.TaskUpdateStatusRequest;
 import org.example.dto.UserCommentRequest;
 import org.example.enums.TaskStatus;
+import org.example.exception.BadRequestException;
 import org.example.exception.NotFoundException;
 import org.example.mapper.TaskMapper;
 import org.example.model.Task;
@@ -15,6 +16,8 @@ import org.example.service.SqsService;
 import org.example.service.TaskService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -43,6 +46,9 @@ public class TaskServiceImpl implements TaskService {
     }
 
     public Task updateTaskStatus(TaskUpdateStatusRequest request) {
+        if (request.status().equals(TaskStatus.open.toString()) && request.deadline().isBefore(LocalDateTime.now())){
+            throw new BadRequestException("Cannot reopen a task with a past deadline.");
+        }
         Task task = taskRepository.updateTaskStatus(request);
         if (request.status().equals(TaskStatus.open.toString())) {
             sqsService.sendToSQS(task, "TASK RE-OPEN NOTIFICATION", task.getAssignedTo(), "Task has been re-opened, ensure you complete it", reopenedTasksTopicArn);
