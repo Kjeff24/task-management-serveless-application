@@ -82,6 +82,7 @@ public class TaskServiceImpl implements TaskService {
         taskToUpdate.setName(taskRequest.name());
         taskToUpdate.setDescription(taskRequest.description());
         taskToUpdate.setDeadline(taskRequest.deadline().toString());
+        taskToUpdate.setResponsibility(taskRequest.responsibility());
 
         if (!taskToUpdate.getAssignedTo().equalsIgnoreCase(taskRequest.assignedTo())) {
             taskToUpdate.setAssignedTo(taskRequest.assignedTo());

@@ -15,6 +15,7 @@ public class TaskMapper {
                 .taskId(UUID.randomUUID().toString())
                 .name(taskRequest.name())
                 .description(taskRequest.description())
+                .responsibility(taskRequest.responsibility())
                 .assignedTo(taskRequest.assignedTo())
                 .status(TaskStatus.open.toString())
                 .deadline(taskRequest.deadline().toString())
