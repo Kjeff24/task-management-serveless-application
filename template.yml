@@ -272,7 +272,6 @@ Resources:
               - !Ref TaskCompleteNotificationTopic
               - !Ref ClosedTasksNotificationTopic
 
-
   # Custom resource to perform actions after resource creation
   MyCustomResource:
     Type: Custom::MyCustomResource
