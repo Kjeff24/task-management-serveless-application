@@ -33,10 +33,10 @@ Parameters:
 
 Resources:
   # Lambda Function for API Gateway
-  SpringBootServerlessFunction:
+  APIGatewayLambda:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-SpringBootServerlessFunction
+      FunctionName: !Sub ${AWS::StackName}-APIGatewayLambda
       Handler: org.example.StreamLambdaHandler::handleRequest
       Runtime: java21
       CodeUri: .
