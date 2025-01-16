@@ -11,6 +11,8 @@ public record TaskRequest(
         String name,
         @NotBlank(message = "description field is required")
         String description,
+        @NotBlank(message = "responsibility field is required")
+        String responsibility,
         @NotBlank(message = "assignedTo field is required")
         String assignedTo,
         @NotNull(message = "deadline field is required")

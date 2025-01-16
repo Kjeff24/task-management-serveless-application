@@ -17,6 +17,7 @@ public class Task {
     private String name;
     private String description;
     private String userComment;
+    private String responsibility;
     private String assignedTo;
     private String status;
     private String createdBy;
@@ -43,6 +44,11 @@ public class Task {
     @DynamoDbAttribute(value = "userComment")
     public String getUserComment() {
         return userComment;
+    }
+
+    @DynamoDbAttribute(value = "responsibility")
+    public String getResponsibility() {
+        return responsibility;
     }
 
     @DynamoDbAttribute(value = "assignedTo")
