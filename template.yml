@@ -124,6 +124,7 @@ Resources:
               - !Ref TasksAssignmentNotificationTopic
               - !Ref ReopenedTasksNotificationTopic
               - !Ref TaskCompleteNotificationTopic
+              - !Ref TasksDeadlineNotificationTopic
         - Statement:
             Effect: Allow
             Action:
