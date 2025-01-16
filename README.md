@@ -11,23 +11,27 @@ The Task Management System enables administrators to create and assign tasks to 
 
 ## ARCHITECTURE
 The system leverages the following AWS services:
-1. Amazon Cognito:
-- For user authentication and secure access to AWS backend services.
+1. Amazon Cognito: For user authentication and secure access to AWS backend services.
 
-2. AWS Step Functions:
-- Orchestrates workflows such as subscribing users to SNS topics and handling task deadlines.
+2. AWS Step Functions: Orchestrates workflows such as subscribing users to SNS topics and handling task deadlines.
 
-3. Amazon SQS:
-- Queue for asynchronous task notifications and deadline processing.
+3. Amazon SQS: Queue for asynchronous task notifications and deadline processing.
 
-4. Amazon SNS:
-- Email notifications for task events.
+4. Amazon SNS: Email notifications for task events.
 
-5. DynamoDB:
-- Stores tasks details.
+5. DynamoDB: Stores tasks details.
 
-6. Lambda Functions:
-- Serverless computing service.
+6. Lambda Functions: Serverless computing service.
+
+7. UserPool: A user directory in Amazon Cognito that provides user management and authentication functionalities for applications. It stores user profiles and handles sign-up, sign-in, password recovery, and account verification.
+
+8. UserPoolClient: Allows external applications to access a User Pool such as the frontend
+
+9. UserPoolDomain: Provides a URL for accessing the hosted UI for sign-in
+
+10. UserPoolGroup: Allows to group users based on roles
+
+![architecture](assets/task-management-resource-cloudformation.png)
 
 ## FEATURES
 ### Admin Features
