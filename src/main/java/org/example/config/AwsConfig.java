@@ -12,13 +12,6 @@ import software.amazon.awssdk.services.sqs.SqsClient;
 
 @Configuration
 public class AwsConfig {
-    @Value("${app.aws.region}")
-    private String awsRegion;
-
-    @Bean
-    public SnsClient snsClient() {
-        return SnsClient.create();
-    }
 
     @Bean
     public SqsClient sqsClient() {
