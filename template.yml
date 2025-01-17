@@ -607,11 +607,11 @@ Resources:
 
 
 Outputs:
-  SpringBootServelessApi:
+  APIGatewayURI:
     Description: URL for application
     Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod'
     Export:
-      Name: SpringBootServelessApi
+      Name: APIGatewayURI
 
   UserPoolId:
     Description: Cognito User Pool ID
