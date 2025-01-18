@@ -43,7 +43,7 @@ public class EventBridgeSchedulerLambda implements RequestHandler<Object, Void> 
     }
 
     private void checkTasks(LocalDateTime now, LocalDateTime endTime, Context context, boolean isReminderCheck) {
-        QueryRequest queryRequest = buildQueryRequest(now, endTime);
+        QueryRequest queryRequest = buildQueryRequest(now, endTime, isReminderCheck);
         QueryResponse queryResponse = dynamoDbClient.query(queryRequest);
 
         for (Map<String, AttributeValue> item : queryResponse.items()) {
@@ -51,28 +51,37 @@ public class EventBridgeSchedulerLambda implements RequestHandler<Object, Void> 
         }
     }
 
-    private QueryRequest buildQueryRequest(LocalDateTime now, LocalDateTime endTime) {
+    private QueryRequest buildQueryRequest(LocalDateTime now, LocalDateTime endTime, boolean isReminderCheck) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
         Map<String, AttributeValue> values = new HashMap<>();
         values.put(":status", AttributeValue.builder().s("open").build());
         values.put(":currentTime", AttributeValue.builder().s(now.format(formatter)).build());
 
-        String keyCondition;
+        String attributeToCheck = isReminderCheck ? "hasSentReminderNotification" : "hasSentDeadlineNotification";
+        values.put(":notification", AttributeValue.builder().n("0").build());
+
+        StringBuilder keyCondition = new StringBuilder("#status = :status");
         if (endTime != null) {
             values.put(":endTime", AttributeValue.builder().s(endTime.format(formatter)).build());
-            keyCondition = "#status = :status AND #deadline BETWEEN :currentTime AND :endTime";
+            keyCondition.append(" AND #deadline BETWEEN :currentTime AND :endTime");
         } else {
-            keyCondition = "#status = :status AND #deadline <= :currentTime";
+            keyCondition.append(" AND #deadline <= :currentTime");
         }
 
         return QueryRequest.builder()
                 .tableName(tasksTable)
                 .indexName("StatusAndDeadlineIndex")
-                .keyConditionExpression(keyCondition)
-                .expressionAttributeNames(Map.of("#status", "status", "#deadline", "deadline"))
+                .keyConditionExpression(String.valueOf(keyCondition))
+                .filterExpression("#notification = :notification")
+                .expressionAttributeNames(Map.of(
+                        "#status", "status",
+                        "#deadline", "deadline",
+                        "#notification", attributeToCheck
+                ))
                 .expressionAttributeValues(values)
                 .build();
     }
+
 
     private void handleTask(Map<String, AttributeValue> item, LocalDateTime now, Context context, boolean isReminderCheck) {
         String taskId = item.get("taskId").s();
@@ -80,9 +89,8 @@ public class EventBridgeSchedulerLambda implements RequestHandler<Object, Void> 
         LocalDateTime taskDeadline = LocalDateTime.parse(deadline, DateTimeFormatter.ISO_DATE_TIME);
 
         String attributeToUpdate = isReminderCheck ? "hasSentReminderNotification" : "hasSentDeadlineNotification";
-        int notificationSent = Integer.parseInt(item.get(attributeToUpdate).n());
 
-        if (shouldSendNotification(now, taskDeadline, isReminderCheck) && notificationSent == 0) {
+        if (shouldSendNotification(now, taskDeadline, isReminderCheck)) {
             Map<String, MessageAttributeValue> attributes = prepareAttributes(item, isReminderCheck);
             sendToSQS(attributes, buildTaskDetails(item, isReminderCheck));
             updateDynamoDB(taskId, attributeToUpdate);
