@@ -60,18 +60,18 @@ public class EventBridgeSchedulerLambda implements RequestHandler<Object, Void> 
         String attributeToCheck = isReminderCheck ? "hasSentReminderNotification" : "hasSentDeadlineNotification";
         values.put(":notification", AttributeValue.builder().n("0").build());
 
-        String keyCondition = "#status = :status";
+        StringBuilder keyCondition = new StringBuilder("#status = :status");
         if (endTime != null) {
             values.put(":endTime", AttributeValue.builder().s(endTime.format(formatter)).build());
-            keyCondition += " AND #deadline BETWEEN :currentTime AND :endTime";
+            keyCondition.append(" AND #deadline BETWEEN :currentTime AND :endTime");
         } else {
-            keyCondition += " AND #deadline <= :currentTime";
+            keyCondition.append(" AND #deadline <= :currentTime");
         }
 
         return QueryRequest.builder()
                 .tableName(tasksTable)
                 .indexName("StatusAndDeadlineIndex")
-                .keyConditionExpression(keyCondition)
+                .keyConditionExpression(String.valueOf(keyCondition))
                 .filterExpression("#notification = :notification")
                 .expressionAttributeNames(Map.of(
                         "#status", "status",
