@@ -60,7 +60,7 @@ public class SendDeadlineNotificationLambda implements RequestHandler<Map<String
         PublishRequest publishRequest = PublishRequest.builder()
                 .topicArn(topicArn)
                 .message(message)
-                .subject("Task Deadline Expired Notification")
+                .subject("TASK DEADLINE EXPIRED NOTIFICATION")
                 .messageAttributes(messageAttributes)
                 .build();
 
