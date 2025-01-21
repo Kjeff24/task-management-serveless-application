@@ -105,26 +105,19 @@ The system leverages the following AWS services:
 - Implement business logic (e.g., processing SQS messages, updating DynamoDB).
 
 ## Lambda functions
-### EventBridgeSchedulerLambda
-EventBridgeSchedulerLambda interacts with Amazon DynamoDB and Amazon SQS to manage task notifications. The Lambda function checks tasks in DynamoDB for reminders and deadlines, sends appropriate notifications via Amazon SQS, and updates task statuses in DynamoDB.
+- EventBridgeSchedulerLambda: interacts with Amazon DynamoDB and Amazon SQS to manage task notifications. The Lambda function checks tasks in DynamoDB for reminders and deadlines, sends appropriate notifications via Amazon SQS, and updates task statuses in DynamoDB.
 
-### MyStackCompletionLambda
-MyStackCompletionLambda creates admin user and modifies InviteMessageTemplate in the UserPool
+- MyStackCompletionLambda: creates admin user and modifies InviteMessageTemplate in the UserPool
 
-### SendDeadlineNotificationLambda
-SendDeadlineNotificationLambda is use to publish sns topic to the admin and the individual task has been assigned to. It set subscription filter to ensures only the messages are sent to the admin and assignedTo user.
+- SendDeadlineNotificationLambda: It publishes sns topic to the admin and the individual task has been assigned to. It set subscription filter to ensures only the messages are sent to the admin and assignedTo user.
 
-### SQSEventLambda
-SQSEventLambda is use to handle SQSEvent. It publishes sns topic to a specific user by applying subscription filter and also handling task deadline by executing step functions.
+- SQSEventLambda: It handles SQSEvent. It publishes sns topic to a specific user by applying subscription filter and also handling task deadline by executing step functions.
 
-### StreamLambdaHandler
-StreamLambdaHandler is use to handle request from the API Gateway
+- StreamLambdaHandler: It handles request from the API Gateway
 
-### SubscribeToSNS
-SubscribeToSNS is use to subscribe users to SNS topics, it is triggered by a Step function
+- SubscribeToSNS: It subscribes users to SNS topics, it is triggered by a Step function
 
-### UpdateTaskStatusLambda
-UpdateTaskStatusLambda interacts with Amazon Dynamodb to change task status to expires, it is triggered by a Step function
+- UpdateTaskStatusLambda: interacts with Amazon Dynamodb to change task status to expires, it is triggered by a Step function
 
 ## Security
 - Use Amazon Cognito for group-based access control.
