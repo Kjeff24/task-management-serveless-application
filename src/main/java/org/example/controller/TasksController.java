@@ -44,7 +44,6 @@ public class TasksController {
     public ResponseEntity<Task> createTask(@Valid @RequestBody TaskRequest task, @AuthenticationPrincipal Jwt jwt) {
         String adminEmail = jwt.getClaimAsString("email");
         return new ResponseEntity<>(taskService.createTask(task, adminEmail), HttpStatus.CREATED);
-
     }
 
 
@@ -52,7 +51,6 @@ public class TasksController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Task> updateTask(@Valid @RequestBody TaskRequest task, @PathVariable("taskId") String taskId) {
         return ResponseEntity.ok(taskService.updateTask(task, taskId));
-
     }
 
     @PutMapping("/assign")
@@ -98,5 +96,20 @@ public class TasksController {
     @PutMapping("/comment")
     public ResponseEntity<Task> addUserComment(@Valid @RequestBody UserCommentRequest request) {
         return ResponseEntity.ok(taskService.addUserComment(request));
+    }
+
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/assign-to")
+    public ResponseEntity<Task> assignToUser(@Valid @RequestBody AssignToRequest request) {
+        return ResponseEntity.ok(taskService.changeAssignedToUser(request));
+    }
+
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/delete/{taskId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteTask(@PathVariable("taskId") String taskId) {
+        taskService.deleteTask(taskId);
     }
 }
