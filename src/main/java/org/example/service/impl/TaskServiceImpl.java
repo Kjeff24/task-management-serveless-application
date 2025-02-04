@@ -1,6 +1,7 @@
 package org.example.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.example.dto.AssignToRequest;
 import org.example.dto.TaskRequest;
 import org.example.dto.TaskResponse;
 import org.example.dto.TaskUpdateAssignedToRequest;
@@ -94,5 +95,19 @@ public class TaskServiceImpl implements TaskService {
         return taskToUpdate;
     }
 
+    public void deleteTask(String taskId) {
+        taskRepository.deleteTask(taskId);
+    }
+
+    public Task changeAssignedToUser(AssignToRequest request) {
+        Task taskToUpdate = getTaskById(request.taskId());
+
+        if (!taskToUpdate.getAssignedTo().equalsIgnoreCase(request.assignedTo())) {
+            taskToUpdate.setAssignedTo(request.assignedTo());
+            sqsService.sendToSQS(taskToUpdate, "TASK RE-ASSIGNMENT NOTIFICATION", taskToUpdate.getAssignedTo(), "Task has been re-assigned to you", tasksAssignmentTopicArn);
+        }
+        taskRepository.saveTask(taskToUpdate);
+        return taskToUpdate;
+    }
 
 }

@@ -20,4 +20,6 @@ public interface TaskRepository {
     Optional<Task> findByTaskId(String taskId);
 
     Task setComment(UserCommentRequest request);
+
+    void deleteTask(String taskId);
 }

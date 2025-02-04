@@ -21,4 +21,8 @@ public interface TaskService {
     Task addUserComment(UserCommentRequest request);
 
     Task updateTask(TaskRequest task,  String taskId);
+
+    void deleteTask(String taskId);
+
+    Task changeAssignedToUser(AssignToRequest request);
 }
