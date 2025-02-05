@@ -83,6 +83,7 @@ Resources:
           TASKS_ASSIGNMENT_TOPIC_ARN: !Ref TasksAssignmentNotificationTopic
           TASKS_COMPLETE_TOPIC_ARN: !Ref TaskCompleteNotificationTopic
           REOPENED_TASKS_TOPIC_ARN: !Ref ReopenedTasksNotificationTopic
+          CLOSED_TASKS_TOPIC_ARN: !Ref ClosedTasksNotificationTopic
           COGNITO_ADMIN_GROUP: !Ref UserPoolAdminGroupName
           COGNITO_TEAM_MEMBERS_GROUP: !Ref UserPoolTeamGroupName
           COGNITO_USER_POOL_ID: !Ref UserPool
