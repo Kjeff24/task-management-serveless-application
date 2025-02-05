@@ -32,6 +32,8 @@ public class TaskServiceImpl implements TaskService {
     private String reopenedTasksTopicArn;
     @Value("${app.aws.sns.topics.tasks.complete.arn}")
     private String taskCompleteTopicArn;
+    @Value("${app.aws.sns.topics.tasks.closed.arn}")
+    private String closedTaskTopicArn;
 
     public Task createTask(TaskRequest taskRequest, String adminEmail) {
         Task task = taskMapper.toTask(taskRequest, adminEmail);
@@ -96,7 +98,10 @@ public class TaskServiceImpl implements TaskService {
     }
 
     public void deleteTask(String taskId) {
+        Task taskToDelete = getTaskById(taskId);
         taskRepository.deleteTask(taskId);
+        sqsService.sendToSQS(taskToDelete, "TASK CLOSED NOTIFICATION", taskToDelete.getAssignedTo(), "Task has been closed", closedTaskTopicArn);
+
     }
 
     public Task changeAssignedToUser(AssignToRequest request) {
