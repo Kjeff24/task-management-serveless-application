@@ -3,6 +3,7 @@ package org.example.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.example.dto.UserRequest;
 import org.example.dto.UserResponse;
+import org.example.enums.Role;
 import org.example.mapper.UserMapper;
 import org.example.service.UserManagementService;
 import org.example.util.PasswordGenerator;
@@ -49,17 +50,26 @@ public class UserManagementServiceImpl implements UserManagementService {
 
         AdminCreateUserResponse createUserResponse = cognitoIdentityProviderClient.adminCreateUser(createUserRequest);
 
-        AdminAddUserToGroupRequest addUserToGroupRequest = AdminAddUserToGroupRequest.builder()
-                .userPoolId(userPoolId)
-                .username(userRequest.email())
-                .groupName(teamGroup)
-                .build();
+        AdminAddUserToGroupRequest addUserToGroupRequest = null;
+        if(userRequest.role().equalsIgnoreCase(Role.USER.toString())) {
+            addUserToGroupRequest = AdminAddUserToGroupRequest.builder()
+                    .userPoolId(userPoolId)
+                    .username(userRequest.email())
+                    .groupName(teamGroup)
+                    .build();
+        } else  if(userRequest.role().equalsIgnoreCase(Role.ADMIN.toString())) {
+            addUserToGroupRequest = AdminAddUserToGroupRequest.builder()
+                    .userPoolId(userPoolId)
+                    .username(userRequest.email())
+                    .groupName(adminGroup)
+                    .build();
+        }
 
         cognitoIdentityProviderClient.adminAddUserToGroup(addUserToGroupRequest);
 
         UserResponse userResponse = userMapper.toUserResponse(createUserResponse.user());
 
-        startStepFunction(userRequest.email());
+        startStepFunction(userRequest.email(), userRequest.role());
 
         return userResponse;
     }
@@ -99,8 +109,8 @@ public class UserManagementServiceImpl implements UserManagementService {
     }
 
 
-    private void startStepFunction(String userEmail) {
-        String input = String.format("{\"workflowType\":\"onboarding\",\"userEmail\":\"%s\"}", userEmail);
+    private void startStepFunction(String userEmail, String role) {
+        String input = String.format("{\"workflowType\":\"onboarding\",\"userEmail\":\"%s\",\"role\":\"%s\"}", userEmail, role.toUpperCase());
         StartExecutionRequest executionRequest = StartExecutionRequest.builder()
                 .stateMachineArn(stateMachineArn)
                 .input(input)
