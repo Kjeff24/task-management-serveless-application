@@ -163,6 +163,7 @@ Resources:
               - !Ref TasksDeadlineNotificationTopic
               - !Ref ClosedTasksNotificationTopic
               - !Ref ReopenedTasksNotificationTopic
+              - !Ref TaskCompleteNotificationTopic
 
   # Lambda Function to update task status
   UpdateTaskStatusLambda:
@@ -336,6 +337,7 @@ Resources:
         - email
         - openid
         - aws.cognito.signin.user.admin
+        - profile
       SupportedIdentityProviders:
         - COGNITO
       ExplicitAuthFlows:
@@ -484,9 +486,30 @@ Resources:
               "Type": "Choice",
               "Choices": [
                 {
-                  "Variable": "$.workflowType",
-                  "StringEquals": "onboarding",
-                  "Next": "SubscribeToSNS"
+                  "And": [
+                    {
+                      "Variable": "$.workflowType",
+                      "StringEquals": "onboarding"
+                    },
+                    {
+                      "Variable": "$.role",
+                      "StringEquals": "USER"
+                    }
+                  ],
+                  "Next": "SubscribeUserToSNS"
+                },
+                {
+                  "And": [
+                    {
+                      "Variable": "$.workflowType",
+                      "StringEquals": "onboarding"
+                    },
+                    {
+                      "Variable": "$.role",
+                      "StringEquals": "ADMIN"
+                    }
+                  ],
+                  "Next": "SubscribeAdminToSNS"
                 },
                 {
                   "Variable": "$.workflowType",
@@ -496,7 +519,7 @@ Resources:
               ],
               "Default": "FailState"
             },
-            "SubscribeToSNS": {
+            "SubscribeUserToSNS": {
               "Type": "Parallel",
               "Branches": [
                 {
@@ -558,6 +581,40 @@ Resources:
               ],
               "Next": "SuccessState"
             },
+            "SubscribeAdminToSNS": {
+              "Type": "Parallel",
+              "Branches": [
+                {
+                  "StartAt": "SubscribeAdminToClosedTasksTopic",
+                  "States": {
+                    "SubscribeAdminToClosedTasksTopic": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${SubscribeToSnsLambda}",
+                      "Parameters": {
+                        "TopicArn": "${ClosedTasksNotificationTopic}",
+                        "Email.$": "$.userEmail"
+                      },
+                      "End": true
+                    }
+                  }
+                },
+                {
+                  "StartAt": "SubscribeToTaskCompleteTopic",
+                  "States": {
+                    "SubscribeToTaskCompleteTopic": {
+                      "Type": "Task",
+                      "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${SubscribeToSnsLambda}",
+                      "Parameters": {
+                        "TopicArn": "${TaskCompleteNotificationTopic}",
+                        "Email.$": "$.userEmail"
+                      },
+                      "End": true
+                    }
+                  }
+                }
+              ],
+              "Next": "SuccessState"
+            },
             "HandleTaskDeadline": {
               "Type": "Parallel",
               "Branches": [
@@ -605,6 +662,8 @@ Resources:
             }
           }
         }
+      
+
 
 
 Outputs:

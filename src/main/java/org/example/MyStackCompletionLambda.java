@@ -41,6 +41,7 @@ public class MyStackCompletionLambda implements RequestHandler<CloudFormationCus
 
     @Override
     public Void handleRequest(CloudFormationCustomResourceEvent event, Context context) {
+        context.getLogger().log("Event: " + event);
         String responseUrl = event.getResponseUrl();
         String status = "SUCCESS";
         Map<String, Object> responseData = new HashMap<>();
