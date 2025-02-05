@@ -2,15 +2,12 @@ package org.example.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.example.dto.MessageResponse;
 import org.example.dto.UserRequest;
 import org.example.dto.UserResponse;
 import org.example.service.UserManagementService;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
 
 import java.util.List;
 
@@ -24,6 +21,11 @@ public class UserManagement {
     @PostMapping
     public ResponseEntity<UserResponse> createUser(@Valid @RequestBody UserRequest userRequest) {
         return ResponseEntity.ok(userManagementService.createUser(userRequest));
+    }
+
+    @GetMapping("/team-members")
+    public ResponseEntity<List<UserResponse>> getAllTeamMembers() {
+        return ResponseEntity.ok(userManagementService.getAllTeamMembers());
     }
 
     @GetMapping

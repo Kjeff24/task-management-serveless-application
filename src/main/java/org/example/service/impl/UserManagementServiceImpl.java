@@ -74,7 +74,7 @@ public class UserManagementServiceImpl implements UserManagementService {
         return userResponse;
     }
 
-    public List<UserResponse> getAllUsers() {
+    public List<UserResponse> getAllTeamMembers() {
         List<UserResponse> allUserResponses = new ArrayList<>();
         String paginationToken = null;
 
@@ -99,6 +99,30 @@ public class UserManagementServiceImpl implements UserManagementService {
                     UserResponse userResponse = userMapper.toUserResponse(user);
                     allUserResponses.add(userResponse);
                 }
+            }
+
+            paginationToken = response.paginationToken();
+
+        } while (paginationToken != null);
+
+        return allUserResponses;
+    }
+
+    public List<UserResponse> getAllUsers() {
+        List<UserResponse> allUserResponses = new ArrayList<>();
+        String paginationToken = null;
+
+        do {
+            ListUsersRequest listUsersRequest = ListUsersRequest.builder()
+                    .userPoolId(userPoolId)
+                    .paginationToken(paginationToken)
+                    .build();
+
+            ListUsersResponse response = cognitoIdentityProviderClient.listUsers(listUsersRequest);
+
+            for (UserType user : response.users()) {
+                UserResponse userResponse = userMapper.toUserResponse(user);
+                allUserResponses.add(userResponse);
             }
 
             paginationToken = response.paginationToken();
