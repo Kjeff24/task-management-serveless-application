@@ -101,6 +101,7 @@ public class TaskServiceImpl implements TaskService {
         Task taskToDelete = getTaskById(taskId);
         taskRepository.deleteTask(taskId);
         sqsService.sendToSQS(taskToDelete, "TASK CLOSED NOTIFICATION", taskToDelete.getAssignedTo(), "Task has been closed", closedTaskTopicArn);
+        sqsService.sendToSQS(taskToDelete, "TASK CLOSED NOTIFICATION", taskToDelete.getCreatedBy(), "Task has been closed", closedTaskTopicArn);
 
     }
 
