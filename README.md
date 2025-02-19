@@ -1,5 +1,5 @@
 # TASK MANAGER BACKEND APPLICATION
-This document provides an overview of the Task Management System for a field team, its architecture, AWS services used, features, and operational details.
+This document provides an overview of the Task Management System for a field team, its architecture, AWS services used, features, and operational details. [Frontend application](https://github.com/Kjeff24/task-management-frontend-application.git)
 
 ## OVERVIEW
 The Task Management System enables administrators to create and assign tasks to team members, while allowing team members to view and update their assigned tasks. It leverages AWS serverless services for scalability, efficiency, and ease of maintenance.
