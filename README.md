@@ -10,6 +10,8 @@ The Task Management System enables administrators to create and assign tasks to 
 - Fine-grained access controls for administrators and team members.
 
 ## ARCHITECTURE
+<img width="1475" height="662" alt="task-management-arch-diagram" src="https://github.com/user-attachments/assets/ad6096f4-8c93-4883-9780-e5f29b80da43" />
+
 The system leverages the following AWS services:
 1. Amazon Cognito: For user authentication and secure access to AWS backend services.
 
@@ -155,3 +157,4 @@ curl --location --request POST 'https://<your-user-pool-domain>.auth.<your-aws-r
 --data-urlencode 'redirect_uri=http://localhost:4200' | jq .
 
 ```
+
